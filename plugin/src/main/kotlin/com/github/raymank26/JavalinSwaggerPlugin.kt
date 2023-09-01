@@ -7,6 +7,7 @@ class JavalinSwaggerPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
         target.tasks.create("generateSwaggerClient") {
+            println("HERE")
         }
     }
 }
