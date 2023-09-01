@@ -10,3 +10,4 @@ plugins {
 }
 
 rootProject.name = "swagger-javalin-plugin"
+include("plugin")

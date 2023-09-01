@@ -11,7 +11,7 @@ class FunctionalTest {
     lateinit var projectDir: File
 
     @Test
-    fun test() {
+    fun shouldGenerateServerInterfaces() {
         File(projectDir, "build.gradle").writer().use { writer ->
             writer.write(
                 """
