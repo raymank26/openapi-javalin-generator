@@ -39,6 +39,8 @@ gradlePlugin {
 
 dependencies {
     implementation("io.swagger.parser.v3:swagger-parser:2.1.16")
+    implementation("com.squareup:kotlinpoet:1.14.2")
+
 
     "functionalTestImplementation"("org.junit.jupiter:junit-jupiter:5.10.0")
     "functionalTestImplementation"("org.junit.jupiter:junit-jupiter-api:5.10.0")

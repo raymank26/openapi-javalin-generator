@@ -16,9 +16,7 @@ data class ParamDescriptor(
     val typePropertyDescriptor: TypePropertyDescriptor
 )
 
-interface RequestBody {
-
-}
+interface RequestBody
 
 sealed interface TypeDescriptor {
 
