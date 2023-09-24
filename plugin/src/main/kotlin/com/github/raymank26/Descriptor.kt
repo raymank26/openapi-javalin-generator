@@ -20,9 +20,9 @@ interface RequestBody
 
 sealed interface TypeDescriptor {
 
-    data class Array(val itemDescriptor: TypeDescriptor) : TypeDescriptor
+    data class Array(val clsName: String, val itemDescriptor: TypeDescriptor) : TypeDescriptor
 
-    data class Object(val properties: List<TypePropertyDescriptor>) : TypeDescriptor
+    data class Object(val clsName: String, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
 
     data class OneOf(val typeDescriptors: List<TypeDescriptor>) : TypeDescriptor
 
@@ -31,6 +31,8 @@ sealed interface TypeDescriptor {
     data object Int64Type : TypeDescriptor
 
     data object IntType : TypeDescriptor
+
+    data class RefType(val name: String) : TypeDescriptor
 }
 
 data class TypePropertyDescriptor(

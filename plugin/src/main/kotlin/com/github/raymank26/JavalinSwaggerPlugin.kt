@@ -4,6 +4,7 @@ import io.swagger.parser.OpenAPIParser
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import java.io.File
+import java.nio.file.Paths
 
 class JavalinSwaggerPlugin : Plugin<Project> {
 
@@ -22,7 +23,10 @@ class JavalinSwaggerPlugin : Plugin<Project> {
                 val spec = result.openAPI
                 val operationsParser = OperationsParser(spec)
                 val specMetadata = operationsParser.parseSpec()
-                val typesGenerator = TypesGenerator(specMetadata, basePackageName)
+                val typesGenerator = TypesGenerator(
+                    specMetadata, basePackageName, target.buildDir.toPath()
+                        .resolve(Paths.get("generated", "main", "kotlin"))
+                )
                 typesGenerator.generateTypes()
                 val okHttpClientInterfaceGenerator = OkHttpClientInterfaceGenerator()
 //            okHttpClientInterfaceGenerator.generate("spec", operations)
