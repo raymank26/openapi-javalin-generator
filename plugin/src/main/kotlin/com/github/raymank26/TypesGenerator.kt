@@ -12,20 +12,23 @@ class TypesGenerator(
     private val baseGenPath: Path,
 ) {
 
-    private val alreadyGenerated: MutableSet<String> = mutableSetOf()
+    private val alreadyGenerated: MutableMap<String, TypeName> = mutableMapOf()
 
     fun generateTypes() {
-        specMetadata.refs.forEach { (refName, value: TypeDescriptor) ->
+        specMetadata.refs.forEach { (_, value: TypeDescriptor) ->
             generateTypeDescriptor(value, true)
         }
     }
 
     private fun generateTypeDescriptor(value: TypeDescriptor, required: Boolean): TypeName {
-
         val basicType = when (value) {
             is TypeDescriptor.Array -> {
                 val innerTypeName = generateTypeDescriptor(value.itemDescriptor, true)
                 val name = value.clsName
+
+                alreadyGenerated[name]?.let {
+                    return it
+                }
                 val clsBuilder = TypeSpec.classBuilder(name)
                 clsBuilder.addProperty(
                     name.replaceFirstChar { it.lowercase(Locale.getDefault()) },
@@ -36,17 +39,17 @@ class TypesGenerator(
                     .addType(typeSpec)
                     .build()
                     .writeTo(baseGenPath)
-                bestGuess("$basePackageName.$name")
-
+                val typeName = bestGuess("$basePackageName.$name")
+                alreadyGenerated[value.clsName] = typeName
+                typeName
             }
 
             is TypeDescriptor.RefType -> bestGuess(basePackageName + "." + value.name.split("/").last())
             is TypeDescriptor.Object -> {
-//                val className = refName.split("/").last().capitalized()
-//                if (alreadyGenerated.contains(refName)) {
-//                    return refName.javaClass.asTypeName()
-//                }
                 val name = value.clsName
+                alreadyGenerated[name]?.let {
+                    return it
+                }
                 val clsBuilder = TypeSpec.classBuilder(name)
                 value.properties.forEach { property ->
                     clsBuilder.addProperty(
@@ -62,7 +65,9 @@ class TypesGenerator(
                     .addType(typeSpec)
                     .build()
                     .writeTo(baseGenPath)
-                bestGuess("$basePackageName.$name")
+                val typeName = bestGuess("$basePackageName.$name")
+                alreadyGenerated[value.clsName] = typeName
+                typeName
             }
 
             is TypeDescriptor.OneOf -> TODO()
