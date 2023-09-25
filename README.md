@@ -1,6 +1,6 @@
 # Overview
 
-Status: development
+Status: proof of concept
 
 A gradle plugin for OpenApi client/server code generation. The tool generates type-safe client code with
 `OkHttpClient` and `Javalin` server stub without annotations.
