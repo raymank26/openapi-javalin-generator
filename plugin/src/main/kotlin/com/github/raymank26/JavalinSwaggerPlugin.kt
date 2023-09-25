@@ -6,6 +6,7 @@ import org.gradle.api.Project
 import java.io.File
 import java.nio.file.Paths
 
+@Suppress("unused")
 class JavalinSwaggerPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
@@ -47,7 +48,12 @@ class JavalinSwaggerPlugin : Plugin<Project> {
                 )
                 serverInterfaceGenerator.generate()
 
-                println("HERE")
+                val javalinControllerGenerator = JavalinControllerGenerator(
+                    specMetadata = specMetadata,
+                    basePackageName = basePackageName,
+                    baseGenerationPath = baseGenerationPath
+                )
+                javalinControllerGenerator.generate()
             }
         }
     }

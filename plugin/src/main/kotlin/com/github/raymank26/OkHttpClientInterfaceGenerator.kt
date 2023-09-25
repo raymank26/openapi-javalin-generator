@@ -17,11 +17,11 @@ class OkHttpClientInterfaceGenerator(
         val objectMapperType = bestGuess("com.fasterxml.jackson.databind.ObjectMapper")
         typeSpec.primaryConstructor(
             FunSpec.constructorBuilder()
-                .addParameter(ParameterSpec("host", String::class.java.asTypeName()))
+                .addParameter(ParameterSpec("host", ClassName("kotlin", "String")))
                 .build()
         )
         typeSpec.addProperty(
-            PropertySpec.builder("host", String::class.java.asTypeName(), KModifier.PRIVATE)
+            PropertySpec.builder("host", ClassName("kotlin", "String"), KModifier.PRIVATE)
                 .initializer("host")
                 .build()
         )
@@ -33,7 +33,12 @@ class OkHttpClientInterfaceGenerator(
 
         typeSpec.addProperty(
             PropertySpec.builder("objectMapper", objectMapperType, KModifier.PRIVATE)
-                .initializer(CodeBlock.of("%T()", objectMapperType))
+                .initializer(
+                    CodeBlock.of(
+                        "%T().%M()", objectMapperType,
+                        MemberName("com.fasterxml.jackson.module.kotlin", "registerKotlinModule")
+                    )
+                )
                 .build()
         )
 

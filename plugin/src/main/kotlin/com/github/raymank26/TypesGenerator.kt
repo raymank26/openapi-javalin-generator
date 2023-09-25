@@ -4,7 +4,6 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ClassName.Companion.bestGuess
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import java.nio.file.Path
-import java.util.*
 
 class TypesGenerator(
     private val specMetadata: SpecMetadata,
@@ -36,6 +35,7 @@ class TypesGenerator(
                     return it
                 }
                 val clsBuilder = TypeSpec.classBuilder(name)
+                    .addModifiers(KModifier.DATA)
                 val listType = bestGuess("kotlin.collections.List").parameterizedBy(innerTypeName)
                 clsBuilder.primaryConstructor(
                     FunSpec.constructorBuilder()
@@ -130,17 +130,8 @@ class TypesGenerator(
             }
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
-            TypeDescriptor.StringType -> String::class.java.asTypeName()
+            TypeDescriptor.StringType -> ClassName("kotlin", "String")
         }
         return basicType.copy(nullable = !required)
     }
-}
-
-//sealed interface Response {
-//
-//    data class aResponse(a: Foo): Response
-//}
-
-fun String.decapitalized(): String {
-    return replaceFirstChar { it.lowercase(Locale.getDefault()) }
 }

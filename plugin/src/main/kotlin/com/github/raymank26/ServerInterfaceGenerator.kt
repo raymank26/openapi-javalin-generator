@@ -52,7 +52,7 @@ class ServerInterfaceGenerator(
             is TypeDescriptor.RefType -> ClassName(basePackageName, descriptor.name)
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
-            TypeDescriptor.StringType -> String::class.java.asTypeName()
+            TypeDescriptor.StringType -> ClassName("kotlin", "String")
         }
     }
 }

@@ -67,7 +67,7 @@ paths:
         "200":
           description: Expected response to a valid request
           schema:
-            $ref: '#/definitions/Pets'
+            $ref: '#/definitions/Pet'
         default:
           description: unexpected error
           schema:
