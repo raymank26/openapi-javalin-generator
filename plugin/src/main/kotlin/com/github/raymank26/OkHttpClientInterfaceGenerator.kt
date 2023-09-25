@@ -52,14 +52,14 @@ class OkHttpClientInterfaceGenerator(
             funSpec.addParameter(paramDescriptor.name, resolveType(paramDescriptor.typePropertyDescriptor))
         }
         funSpec.returns(bestGuess("$basePackageName.${operation.responseBody.clsName}"))
-        val path = operation.path.split("/").map {
+        val path = operation.path.split("/").joinToString("/") {
             if (it.startsWith("{")) {
                 val paramName = it.substring(1 until it.length - 1)
                 "\$$paramName"
             } else {
                 it
             }
-        }.joinToString("/")
+        }
 
         // url
         funSpec.addCode(buildCodeBlock {
@@ -85,7 +85,9 @@ class OkHttpClientInterfaceGenerator(
             addStatement("return httpClient.newCall(%T.Builder()", bestGuess("okhttp3.Request"))
                 .indent()
                 .addStatement(".url(url)")
-                .addStatement(".build()).execute().use {")
+                .addStatement(".build())")
+                .addStatement(".execute()")
+                .addStatement(".use {")
                 .indent()
                 .add(generateResponseBody(operation))
                 .unindent()

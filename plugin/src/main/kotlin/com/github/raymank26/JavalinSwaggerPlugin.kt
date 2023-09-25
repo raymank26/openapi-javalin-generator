@@ -26,14 +26,27 @@ class JavalinSwaggerPlugin : Plugin<Project> {
                 val baseGenerationPath = target.buildDir.toPath()
                     .resolve(Paths.get("generated", "main", "kotlin"))
 
-                val typesGenerator = TypesGenerator(specMetadata, basePackageName, baseGenerationPath)
+                val typesGenerator = TypesGenerator(
+                    specMetadata = specMetadata,
+                    basePackageName = basePackageName,
+                    baseGenPath = baseGenerationPath
+                )
                 typesGenerator.generateTypes()
 
                 val okHttpClientInterfaceGenerator = OkHttpClientInterfaceGenerator(
-                    specMetadata, basePackageName,
-                    baseGenerationPath
+                    specMetadata = specMetadata,
+                    basePackageName = basePackageName,
+                    baseGenerationPath = baseGenerationPath
                 )
                 okHttpClientInterfaceGenerator.generateClient()
+
+                val serverInterfaceGenerator = ServerInterfaceGenerator(
+                    specMetadata = specMetadata,
+                    basePackageName = basePackageName,
+                    baseGenerationPath = baseGenerationPath
+                )
+                serverInterfaceGenerator.generate()
+
                 println("HERE")
             }
         }
