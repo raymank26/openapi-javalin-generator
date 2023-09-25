@@ -24,7 +24,7 @@ class FunctionalTest {
         }
         GradleRunner.create()
             .withProjectDir(projectDir)
-            .withArguments("generateSwaggerClient")
+            .withArguments("generateOpenApiClient")
             .forwardOutput()
             .withPluginClasspath()
             .build()

@@ -22,11 +22,11 @@ dependencies {
 }
 
 tasks.create("foo") {
-    dependsOn("generateSwaggerClient")
+    dependsOn("generateOpenApiClasses")
 }
 
 tasks.compileJava {
-    dependsOn("generateSwaggerClient")
+    dependsOn("generateOpenApiClasses")
 }
 
 kotlin {

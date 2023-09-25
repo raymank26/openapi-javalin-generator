@@ -12,7 +12,7 @@ class JavalinOpenApiPlugin : Plugin<Project> {
     override fun apply(target: Project) {
         val extension = target.extensions.create("javalinSwagger", JavalinOpenApiPluginExtension::class.java)
 
-        target.tasks.create("generateSwaggerClient") {
+        target.tasks.create("generateOpenApiClasses") {
             it.doLast {
                 val basePackageName = extension.basePackageName.get()
                 val result = File("${target.projectDir}/openapi/spec.yml")
