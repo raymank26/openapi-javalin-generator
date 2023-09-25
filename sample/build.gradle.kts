@@ -1,8 +1,8 @@
-import com.github.raymank26.JavalinSwaggerPluginExtension
+import com.github.raymank26.JavalinOpenApiPluginExtension
 
 plugins {
     kotlin("jvm") version "1.9.0"
-    id("com.github.raymank26.javalin-swagger")
+    id("com.github.raymank26.javalin-openapi")
 }
 
 repositories {
@@ -37,7 +37,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-configure<JavalinSwaggerPluginExtension> {
+configure<JavalinOpenApiPluginExtension> {
     basePackageName.set("foo")
 }
 

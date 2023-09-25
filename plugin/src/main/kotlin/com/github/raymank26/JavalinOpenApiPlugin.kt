@@ -7,15 +7,15 @@ import java.io.File
 import java.nio.file.Paths
 
 @Suppress("unused")
-class JavalinSwaggerPlugin : Plugin<Project> {
+class JavalinOpenApiPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        val extension = target.extensions.create("javalinSwagger", JavalinSwaggerPluginExtension::class.java)
+        val extension = target.extensions.create("javalinSwagger", JavalinOpenApiPluginExtension::class.java)
 
         target.tasks.create("generateSwaggerClient") {
             it.doLast {
                 val basePackageName = extension.basePackageName.get()
-                val result = File("${target.projectDir}/swagger/spec.yml")
+                val result = File("${target.projectDir}/openapi/spec.yml")
                     .reader()
                     .use {
                         OpenAPIParser().readContents(it.readText(), null, null)

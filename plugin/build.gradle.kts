@@ -29,9 +29,9 @@ tasks.check {
 
 gradlePlugin {
     // Define the plugin
-    val swaggerGenerator by plugins.creating {
-        id = "com.github.raymank26.javalin-swagger"
-        implementationClass = "com.github.raymank26.JavalinSwaggerPlugin"
+    val openApiGenerator by plugins.creating {
+        id = "com.github.raymank26.javalin-openapi"
+        implementationClass = "com.github.raymank26.JavalinOpenApiPlugin"
     }
     testSourceSets(functionalTest)
 
