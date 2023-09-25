@@ -10,7 +10,7 @@ import java.nio.file.Paths
 class JavalinOpenApiPlugin : Plugin<Project> {
 
     override fun apply(target: Project) {
-        val extension = target.extensions.create("javalinSwagger", JavalinOpenApiPluginExtension::class.java)
+        val extension = target.extensions.create("javalinOpenApi", JavalinOpenApiPluginExtension::class.java)
 
         target.tasks.create("generateOpenApiClasses") {
             it.doLast {
