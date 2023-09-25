@@ -18,9 +18,15 @@ class TypesGenerator(
         specMetadata.refs.forEach { (_, value: TypeDescriptor) ->
             generateTypeDescriptor(value, true)
         }
+        specMetadata.operations.forEach { operationDescriptor ->
+            generateTypeDescriptor(operationDescriptor.responseBody.type, true)
+        }
     }
 
-    private fun generateTypeDescriptor(value: TypeDescriptor, required: Boolean): TypeName {
+    private fun generateTypeDescriptor(
+        value: TypeDescriptor,
+        required: Boolean,
+    ): TypeName {
         val basicType = when (value) {
             is TypeDescriptor.Array -> {
                 val innerTypeName = generateTypeDescriptor(value.itemDescriptor, true)
@@ -30,9 +36,17 @@ class TypesGenerator(
                     return it
                 }
                 val clsBuilder = TypeSpec.classBuilder(name)
+                val listType = bestGuess("kotlin.collections.List").parameterizedBy(innerTypeName)
+                clsBuilder.primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .addParameter(ParameterSpec(name.decapitalized(), listType))
+                        .build()
+                )
                 clsBuilder.addProperty(
-                    name.replaceFirstChar { it.lowercase(Locale.getDefault()) },
-                    bestGuess("java.util.List").parameterizedBy(innerTypeName)
+                    PropertySpec
+                        .builder(name.decapitalized(), listType)
+                        .initializer(name.decapitalized())
+                        .build()
                 )
                 val typeSpec = clsBuilder.build()
                 FileSpec.builder(basePackageName, value.clsName)
@@ -51,12 +65,18 @@ class TypesGenerator(
                     return it
                 }
                 val clsBuilder = TypeSpec.classBuilder(name)
+                    .addModifiers(KModifier.DATA)
+                clsBuilder.primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .addParameters(value.properties
+                            .map { ParameterSpec(it.name, generateTypeDescriptor(it.type, it.required)) })
+                        .build()
+                )
                 value.properties.forEach { property ->
                     clsBuilder.addProperty(
-                        PropertySpec.builder(
-                            property.name,
-                            generateTypeDescriptor(property.type, property.required)
-                        )
+                        PropertySpec
+                            .builder(property.name, generateTypeDescriptor(property.type, property.required))
+                            .initializer(property.name)
                             .build()
                     )
                 }
@@ -70,11 +90,57 @@ class TypesGenerator(
                 typeName
             }
 
-            is TypeDescriptor.OneOf -> TODO()
+            is TypeDescriptor.OneOf -> {
+                val name = value.clsName
+                val responseTypeBuilder = TypeSpec.interfaceBuilder(name)
+                    .addModifiers(KModifier.SEALED)
+                val typeName = bestGuess("$basePackageName.$name")
+
+                value.typeDescriptors.forEach { (name, description) ->
+                    val subType = generateTypeDescriptor(description, true)
+                    val simpleName = (subType as ClassName).simpleName
+
+                    val subTypeSpec = TypeSpec.classBuilder(name)
+                        .addModifiers(KModifier.DATA)
+                        .addSuperinterface(typeName)
+                        .primaryConstructor(
+                            FunSpec.constructorBuilder()
+                                .addParameter(
+                                    ParameterSpec
+                                        .builder(simpleName.decapitalized(), subType)
+                                        .build()
+                                )
+                                .build()
+                        )
+                        .addProperty(
+                            PropertySpec.builder(simpleName.decapitalized(), subType)
+                                .initializer(simpleName.decapitalized())
+                                .build()
+                        )
+
+                        .build()
+
+                    responseTypeBuilder.addType(subTypeSpec)
+                }
+                FileSpec.builder(basePackageName, value.clsName)
+                    .addType(responseTypeBuilder.build())
+                    .build()
+                    .writeTo(baseGenPath)
+                typeName
+            }
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
             TypeDescriptor.StringType -> String::class.java.asTypeName()
         }
         return basicType.copy(nullable = !required)
     }
+}
+
+//sealed interface Response {
+//
+//    data class aResponse(a: Foo): Response
+//}
+
+fun String.decapitalized(): String {
+    return replaceFirstChar { it.lowercase(Locale.getDefault()) }
 }

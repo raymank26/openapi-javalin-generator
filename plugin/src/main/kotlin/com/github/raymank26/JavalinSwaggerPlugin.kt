@@ -23,13 +23,18 @@ class JavalinSwaggerPlugin : Plugin<Project> {
                 val spec = result.openAPI
                 val operationsParser = OperationsParser(spec)
                 val specMetadata = operationsParser.parseSpec()
-                val typesGenerator = TypesGenerator(
-                    specMetadata, basePackageName, target.buildDir.toPath()
-                        .resolve(Paths.get("generated", "main", "kotlin"))
-                )
+                val baseGenerationPath = target.buildDir.toPath()
+                    .resolve(Paths.get("generated", "main", "kotlin"))
+
+                val typesGenerator = TypesGenerator(specMetadata, basePackageName, baseGenerationPath)
                 typesGenerator.generateTypes()
-                val okHttpClientInterfaceGenerator = OkHttpClientInterfaceGenerator()
-//            okHttpClientInterfaceGenerator.generate("spec", operations)
+
+                val okHttpClientInterfaceGenerator = OkHttpClientInterfaceGenerator(
+                    specMetadata, basePackageName,
+                    baseGenerationPath
+                )
+                okHttpClientInterfaceGenerator.generateClient()
+                println("HERE")
             }
         }
     }

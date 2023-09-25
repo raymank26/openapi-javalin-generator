@@ -4,10 +4,22 @@ data class OperationDescriptor(
     val path: String,
     val method: String,
     val summary: String,
-    val operationId: String?,
+    val operationId: String,
     val paramDescriptors: List<ParamDescriptor>,
     val requestBody: RequestBody?,
-    val responseBody: List<TypeDescriptor>,
+    val responseBody: ResponseBody,
+)
+
+data class ResponseBody(
+    val statusCodeToClsName: Map<String, String>,
+    val clsName: String,
+    val type: TypeDescriptor,
+    val isSingle: Boolean,
+)
+
+data class ResponseBodyItemDescriptor(
+    val wrapperClsName: String,
+    val itemClsName: String,
 )
 
 data class ParamDescriptor(
@@ -24,7 +36,7 @@ sealed interface TypeDescriptor {
 
     data class Object(val clsName: String, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
 
-    data class OneOf(val typeDescriptors: List<TypeDescriptor>) : TypeDescriptor
+    data class OneOf(val clsName: String, val typeDescriptors: Map<String, TypeDescriptor>) : TypeDescriptor
 
     data object StringType : TypeDescriptor
 

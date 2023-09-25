@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.parameters.Parameter
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
+import org.gradle.configurationcache.extensions.capitalized
 
 class OperationsParser(private val spec: OpenAPI) {
 
@@ -20,7 +21,7 @@ class OperationsParser(private val spec: OpenAPI) {
             }
             parseOperation(path.key, operationGetter.invoke(), method)
         }
-        return SpecMetadata(operations, refsBuilder.build())
+        return SpecMetadata(spec.info.title, operations, refsBuilder.build())
     }
 
     private fun parseOperation(
@@ -35,7 +36,7 @@ class OperationsParser(private val spec: OpenAPI) {
             operationId = operation.operationId,
             paramDescriptors = parseParameters(operation.parameters),
             requestBody = parseRequestBody(operation.requestBody),
-            responseBody = parseResponses(operation.responses),
+            responseBody = parseResponses(operation, operation.responses),
         )
     }
 
@@ -46,13 +47,33 @@ class OperationsParser(private val spec: OpenAPI) {
         TODO("Not yet implemented")
     }
 
-    private fun parseResponses(responses: ApiResponses): List<TypeDescriptor> {
-        return responses.map { (_, response) ->
+    private fun parseResponses(operation: Operation, responses: ApiResponses): ResponseBody {
+        val nameToDescriptor: Map<String, TypeDescriptor> = responses.map { (name, response) ->
             val ref = response.content["application/json"]!!.schema.`$ref`
             val clsName = ref.split("/").last()
             val schema = spec.components.schemas[clsName]!!
             val descriptor = parseTypeDescriptor(ref, clsName, response, schema)
-            descriptor
+
+            name to descriptor
+        }.toMap()
+
+        val codeToClsName = mutableMapOf<String, String>()
+        val clsNameToTypeDescriptor = mutableMapOf<String, TypeDescriptor>()
+        for ((key: String, typeDescriptor: TypeDescriptor) in nameToDescriptor) {
+            val clsName = when (typeDescriptor) {
+                is TypeDescriptor.Object -> typeDescriptor.clsName
+                is TypeDescriptor.Array -> typeDescriptor.clsName
+                else -> error("Cannot infer name")
+            }
+            codeToClsName[key] = clsName
+            clsNameToTypeDescriptor[clsName] = typeDescriptor
+        }
+        return if (nameToDescriptor.size > 1) {
+            val clsName = operation.operationId.capitalized() + "Response"
+            ResponseBody(codeToClsName, clsName, TypeDescriptor.OneOf(clsName, clsNameToTypeDescriptor), false)
+        } else {
+            val clsName = codeToClsName[codeToClsName.keys.first()]!!
+            ResponseBody(codeToClsName, clsName, clsNameToTypeDescriptor[clsName]!!, true)
         }
     }
 
@@ -124,6 +145,7 @@ class OperationsParser(private val spec: OpenAPI) {
 }
 
 data class SpecMetadata(
+    val name: String,
     val operations: List<OperationDescriptor>,
     val refs: Map<String, TypeDescriptor>,
 )

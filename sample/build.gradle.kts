@@ -9,6 +9,11 @@ repositories {
     mavenCentral()
 }
 
+dependencies {
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.15.2")
+}
+
 tasks.create("foo") {
     dependsOn("generateSwaggerClient")
 }
@@ -19,4 +24,12 @@ kotlin {
 
 configure<JavalinSwaggerPluginExtension> {
     basePackageName.set("foo")
+}
+
+sourceSets {
+    main {
+        kotlin {
+            srcDir("$buildDir/generated/main/kotlin")
+        }
+    }
 }
