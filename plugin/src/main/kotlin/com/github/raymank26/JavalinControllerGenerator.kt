@@ -14,12 +14,16 @@ class JavalinControllerGenerator(
         val typeBuilder = TypeSpec.classBuilder("JavalinController")
             .primaryConstructor(
                 FunSpec.constructorBuilder()
-                    .addParameter(ParameterSpec("server", serverInterfaceType))
+                    .addParameter(
+                        ParameterSpec.builder("server", serverInterfaceType)
+                            .build()
+                    )
                     .build()
             )
 
         typeBuilder.addProperty(
             PropertySpec.builder("server", serverInterfaceType)
+                .addModifiers(KModifier.PRIVATE)
                 .initializer("server")
                 .build()
         )
@@ -64,19 +68,23 @@ class JavalinControllerGenerator(
                                 add(buildCodeBlock {
                                     addStatement("when (response) {")
                                         .withIndent {
-                                            operationDescriptor.responseBody.statusCodeToClsName.forEach { (code, clsName) ->
+                                            operationDescriptor.responseBody.statusCodeToClsName.forEach { (code, option) ->
                                                 val sealedClsName = ClassName(
                                                     basePackageName,
                                                     operationDescriptor.responseBody.clsName
                                                 )
-                                                addStatement("is %T.%L -> {", sealedClsName, clsName)
+                                                addStatement("is %T.%L -> {", sealedClsName, option.clsName)
                                                     .withIndent {
                                                         val statusCode = if (code == "default")
-                                                            "response.${clsName.decapitalized()}.code"
+                                                            "response.${option.clsName.decapitalized()}.code"
                                                         else code
-
                                                         addStatement("ctx.status(%L)", statusCode)
-                                                        addStatement("ctx.json(response.%L)", clsName.decapitalized())
+                                                        if (option is ResponseBodySealedOption.Parametrized) {
+                                                            addStatement(
+                                                                "ctx.json(response.%L)",
+                                                                option.clsName.decapitalized()
+                                                            )
+                                                        }
                                                     }
                                                     .addStatement("}")
                                             }

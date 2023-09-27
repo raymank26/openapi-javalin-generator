@@ -13,13 +13,21 @@ class OperationsParser(private val spec: OpenAPI) {
     private val refsBuilder = RefsBuilder()
 
     fun parseSpec(): SpecMetadata {
-        val operations = spec.paths.map { path ->
-            val (method, operationGetter) = when {
-                path.value.get != null -> "get" to { path.value.get }
-                path.value.post != null -> "post" to { path.value.post }
-                else -> error("Not supported")
+        val operations = spec.paths.flatMap { path ->
+            val pathOperations = mutableListOf<OperationDescriptor>()
+            if (path.value.get != null) {
+                pathOperations.add(parseOperation(path.key, path.value.get, "get"))
             }
-            parseOperation(path.key, operationGetter.invoke(), method)
+            if (path.value.post != null) {
+                pathOperations.add(parseOperation(path.key, path.value.post, "post"))
+            }
+            if (path.value.put != null) {
+                pathOperations.add(parseOperation(path.key, path.value.put, "put"))
+            }
+            if (path.value.delete != null) {
+                pathOperations.add(parseOperation(path.key, path.value.put, "delete"))
+            }
+            pathOperations
         }
         return SpecMetadata(spec.info.title, operations, refsBuilder.build())
     }
@@ -34,7 +42,7 @@ class OperationsParser(private val spec: OpenAPI) {
             method = method,
             summary = operation.summary,
             operationId = operation.operationId,
-            paramDescriptors = parseParameters(operation.parameters),
+            paramDescriptors = parseParameters(operation.parameters ?: emptyList()),
             requestBody = parseRequestBody(operation.requestBody),
             responseBody = parseResponses(operation, operation.responses),
         )
@@ -44,36 +52,48 @@ class OperationsParser(private val spec: OpenAPI) {
         if (requestBody == null) {
             return null
         }
+        val required = requestBody.required ?: false
+
+
         TODO("Not yet implemented")
     }
 
     private fun parseResponses(operation: Operation, responses: ApiResponses): ResponseBody {
-        val nameToDescriptor: Map<String, TypeDescriptor> = responses.map { (name, response) ->
-            val ref = response.content["application/json"]!!.schema.`$ref`
-            val clsName = ref.split("/").last()
-            val schema = spec.components.schemas[clsName]!!
-            val descriptor = parseTypeDescriptor(ref, clsName, response, schema)
+        val codeToDescriptor: Map<String, TypeDescriptor?> = responses.map { (code, response) ->
+            val responseCls = response.content["application/json"]
+            val descriptor = if (responseCls != null) {
+                val ref = responseCls.schema.`$ref`
+                val clsName = ref.split("/").last()
+                val schema = spec.components.schemas[clsName]!!
+                parseTypeDescriptor(ref, clsName, response, schema)
+            } else null
 
-            name to descriptor
+            code to descriptor
         }.toMap()
 
-        val codeToClsName = mutableMapOf<String, String>()
-        val clsNameToTypeDescriptor = mutableMapOf<String, TypeDescriptor>()
-        for ((key: String, typeDescriptor: TypeDescriptor) in nameToDescriptor) {
-            val clsName = when (typeDescriptor) {
-                is TypeDescriptor.Object -> typeDescriptor.clsName
-                is TypeDescriptor.Array -> typeDescriptor.clsName
+        val codeToSealedOption = mutableMapOf<String, ResponseBodySealedOption>()
+        val clsNameToTypeDescriptor = mutableMapOf<String, TypeDescriptor?>()
+        for ((code: String, typeDescriptor: TypeDescriptor?) in codeToDescriptor) {
+            val itemOption = when (typeDescriptor) {
+                is TypeDescriptor.Object -> ResponseBodySealedOption.Parametrized(typeDescriptor.clsName)
+                is TypeDescriptor.Array -> ResponseBodySealedOption.Parametrized(typeDescriptor.clsName)
+                null -> when (code) {
+                    "200" -> ResponseBodySealedOption.JustStatus("Ok", 200)
+                    "201" -> ResponseBodySealedOption.JustStatus("Created", 201)
+                    "404" -> ResponseBodySealedOption.JustStatus("NotFound", 404)
+                    else -> error("Cannot infer name from code = $code")
+                }
                 else -> error("Cannot infer name")
             }
-            codeToClsName[key] = clsName
-            clsNameToTypeDescriptor[clsName] = typeDescriptor
+            codeToSealedOption[code] = itemOption
+            clsNameToTypeDescriptor[itemOption.clsName] = typeDescriptor
         }
-        return if (nameToDescriptor.size > 1) {
+        return if (codeToDescriptor.size > 1) {
             val clsName = operation.operationId.capitalized() + "Response"
-            ResponseBody(codeToClsName, clsName, TypeDescriptor.OneOf(clsName, clsNameToTypeDescriptor), false)
+            ResponseBody(codeToSealedOption, clsName, TypeDescriptor.OneOf(clsName, clsNameToTypeDescriptor), false)
         } else {
-            val clsName = codeToClsName[codeToClsName.keys.first()]!!
-            ResponseBody(codeToClsName, clsName, clsNameToTypeDescriptor[clsName]!!, true)
+            val clsOption = codeToSealedOption[codeToSealedOption.keys.first()]!!
+            ResponseBody(codeToSealedOption, clsOption.clsName, clsNameToTypeDescriptor[clsOption.clsName]!!, true)
         }
     }
 

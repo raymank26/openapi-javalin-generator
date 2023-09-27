@@ -11,7 +11,7 @@ private val dog = Pet(2, "Dog", "black")
 
 class SampleTest : BeforeAllCallback {
 
-    private val petClinicClient = SwaggerPetstoreClient("http://localhost:8080")
+    private val petClinicClient = Client("http://localhost:8080")
 
     companion object {
 
@@ -48,8 +48,9 @@ class SampleTest : BeforeAllCallback {
     }
 }
 
+private val pets = listOf(cat, dog).associateBy { it.id }
+
 class PetServer : Server {
-    private val pets = mapOf(cat.id to cat, dog.id to dog)
 
     override fun listPets(limit: Int): ListPetsResponse {
         return if (limit > 0) {

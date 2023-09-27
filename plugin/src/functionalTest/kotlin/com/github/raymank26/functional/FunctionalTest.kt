@@ -26,7 +26,6 @@ class FunctionalTest {
 
     @Test
     fun shouldGenerateClasses() {
-
         File(projectDir, "build.gradle").writer().use { writer ->
             writer.write(
                 """

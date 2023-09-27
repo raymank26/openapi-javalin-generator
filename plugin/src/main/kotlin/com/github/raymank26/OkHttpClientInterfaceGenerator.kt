@@ -2,7 +2,6 @@ package com.github.raymank26
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ClassName.Companion.bestGuess
-import org.gradle.configurationcache.extensions.capitalized
 import java.nio.file.Path
 
 class OkHttpClientInterfaceGenerator(
@@ -11,8 +10,7 @@ class OkHttpClientInterfaceGenerator(
     private val baseGenerationPath: Path
 ) {
     fun generateClient() {
-        val clientName = "${specMetadata.name.replace(" ", "").capitalized()}Client"
-        val typeSpec = TypeSpec.classBuilder(clientName)
+        val typeSpec = TypeSpec.classBuilder("Client")
         val okHttpClientType = bestGuess("okhttp3.OkHttpClient")
         val objectMapperType = bestGuess("com.fasterxml.jackson.databind.ObjectMapper")
         typeSpec.primaryConstructor(
@@ -107,13 +105,25 @@ class OkHttpClientInterfaceGenerator(
             if (!operation.responseBody.isSingle) {
                 addStatement("when (it.code) {")
                 indent()
-                operation.responseBody.statusCodeToClsName.forEach { status, itemDescriptor ->
-                    addStatement(
-                        "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
-                        if (status == "default") "else" else status,
-                        ClassName(basePackageName, operation.responseBody.clsName + "." + itemDescriptor),
-                        ClassName(basePackageName, itemDescriptor)
+                operation.responseBody.statusCodeToClsName.forEach { (status, itemDescriptor) ->
+                    val statusCode = if (status == "default") "else" else status
+                    val cls = ClassName(
+                        basePackageName, operation.responseBody.clsName + "." +
+                                itemDescriptor.clsName
                     )
+                    val optionCls = ClassName(basePackageName, itemDescriptor.clsName)
+                    when (itemDescriptor) {
+                        is ResponseBodySealedOption.JustStatus -> {
+                            addStatement("%L -> %T", statusCode, cls)
+                        }
+
+                        is ResponseBodySealedOption.Parametrized -> {
+                            addStatement(
+                                "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
+                                statusCode, cls, optionCls
+                            )
+                        }
+                    }
                 }
                 unindent()
                 addStatement("}")
@@ -127,7 +137,7 @@ class OkHttpClientInterfaceGenerator(
         val baseType = when (paramDescriptor.type) {
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
-            TypeDescriptor.StringType -> String::class.java.asTypeName()
+            TypeDescriptor.StringType -> ClassName("kotlin", "String")
             else -> error("Unsupported type")
         }
         return baseType.copy(nullable = !paramDescriptor.required)

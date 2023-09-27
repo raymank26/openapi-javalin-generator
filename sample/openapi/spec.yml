@@ -1,4 +1,4 @@
-swagger: "2.0"
+swagger: "3.0"
 info:
   version: 1.0.0
   title: Swagger Petstore
@@ -41,9 +41,25 @@ paths:
             $ref: '#/definitions/Error'
     post:
       summary: Create a pet
-      operationId: createPets
+      operationId: createPet
       tags:
         - pets
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/Pet'
+          application/xml:
+            schema:
+              $ref: '#/definitions/Pet'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/definitions/Pet'
+          text/plain:
+            schema:
+              type: string
       responses:
         "201":
           description: Null response

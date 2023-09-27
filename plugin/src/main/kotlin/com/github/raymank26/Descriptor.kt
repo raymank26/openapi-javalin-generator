@@ -11,11 +11,16 @@ data class OperationDescriptor(
 )
 
 data class ResponseBody(
-    val statusCodeToClsName: Map<String, String>,
+    val statusCodeToClsName: Map<String, ResponseBodySealedOption>,
     val clsName: String,
     val type: TypeDescriptor,
     val isSingle: Boolean,
 )
+
+sealed class ResponseBodySealedOption(val clsName: String) {
+    class JustStatus(clsName: String, code: Int) : ResponseBodySealedOption(clsName)
+    class Parametrized(clsName: String) : ResponseBodySealedOption(clsName)
+}
 
 data class ResponseBodyItemDescriptor(
     val wrapperClsName: String,
@@ -28,7 +33,7 @@ data class ParamDescriptor(
     val typePropertyDescriptor: TypePropertyDescriptor
 )
 
-interface RequestBody
+data class RequestBody(val contentTypeToType: Map<String, TypeDescriptor>, val required: Boolean)
 
 sealed interface TypeDescriptor {
 
@@ -36,7 +41,7 @@ sealed interface TypeDescriptor {
 
     data class Object(val clsName: String, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
 
-    data class OneOf(val clsName: String, val typeDescriptors: Map<String, TypeDescriptor>) : TypeDescriptor
+    data class OneOf(val clsName: String, val typeDescriptors: Map<String, TypeDescriptor?>) : TypeDescriptor
 
     data object StringType : TypeDescriptor
 
