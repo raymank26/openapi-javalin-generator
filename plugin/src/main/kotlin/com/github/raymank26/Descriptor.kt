@@ -11,16 +11,16 @@ data class OperationDescriptor(
 )
 
 data class ResponseBody(
-    val statusCodeToClsName: Map<String, String>,
+    val statusCodeToClsName: Map<String, ResponseBodySealedOption>,
     val clsName: String,
     val type: TypeDescriptor,
     val isSingle: Boolean,
 )
 
-data class ResponseBodyItemDescriptor(
-    val wrapperClsName: String,
-    val itemClsName: String,
-)
+sealed class ResponseBodySealedOption(val clsName: String) {
+    class JustStatus(clsName: String) : ResponseBodySealedOption(clsName)
+    class Parametrized(clsName: String) : ResponseBodySealedOption(clsName)
+}
 
 data class ParamDescriptor(
     val name: String,
@@ -28,7 +28,19 @@ data class ParamDescriptor(
     val typePropertyDescriptor: TypePropertyDescriptor
 )
 
-interface RequestBody
+data class RequestBody(
+    val clsName: String,
+    val contentTypeToType: Map<RequestBodyMediaType, TypeDescriptor>,
+    val type: TypeDescriptor,
+    val required: Boolean
+)
+
+sealed class RequestBodyMediaType(val clsName: String, val mediaType: String) {
+    data object Json : RequestBodyMediaType("Json", "application/json")
+    data object Xml : RequestBodyMediaType("Xml", "application/xml")
+    data object FormData : RequestBodyMediaType("Form", "application/x-www-form-urlencoded")
+}
+
 
 sealed interface TypeDescriptor {
 
@@ -36,7 +48,7 @@ sealed interface TypeDescriptor {
 
     data class Object(val clsName: String, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
 
-    data class OneOf(val clsName: String, val typeDescriptors: Map<String, TypeDescriptor>) : TypeDescriptor
+    data class OneOf(val clsName: String, val typeDescriptors: Map<String, TypeDescriptor?>) : TypeDescriptor
 
     data object StringType : TypeDescriptor
 

@@ -1,10 +1,11 @@
 plugins {
     kotlin("jvm") version "1.9.0"
     `java-gradle-plugin`
+    `maven-publish`
 }
 
 group = "com.github.raymank26"
-version = "1.0-SNAPSHOT"
+version = project.findProperty("version")?.takeIf { it != "unspecified" } ?: "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -55,3 +56,34 @@ dependencies {
 kotlin {
     jvmToolchain(11)
 }
+
+val sourcesJar by tasks.registering(Jar::class) {
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+
+configure<PublishingExtension> {
+    repositories {
+        val customMavenUrl = findProperty("customMavenUrl")
+        if (customMavenUrl != null) {
+            maven {
+                name = "customMaven"
+                url = uri(customMavenUrl)
+                credentials {
+                    username = project.findProperty("customMavenUrlUsername").toString()
+                    password = project.findProperty("customMavenUrlPassword").toString()
+                }
+            }
+        }
+    }
+    publications {
+        register<MavenPublication>("maven") {
+            groupId = project.group.toString()
+            artifactId = "javalin-openapi"
+            version = project.version.toString()
+            artifact(sourcesJar.get())
+            from(components["java"])
+        }
+    }
+}
+

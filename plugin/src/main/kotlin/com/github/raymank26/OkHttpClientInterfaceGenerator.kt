@@ -2,7 +2,6 @@ package com.github.raymank26
 
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ClassName.Companion.bestGuess
-import org.gradle.configurationcache.extensions.capitalized
 import java.nio.file.Path
 
 class OkHttpClientInterfaceGenerator(
@@ -11,8 +10,7 @@ class OkHttpClientInterfaceGenerator(
     private val baseGenerationPath: Path
 ) {
     fun generateClient() {
-        val clientName = "${specMetadata.name.replace(" ", "").capitalized()}Client"
-        val typeSpec = TypeSpec.classBuilder(clientName)
+        val typeSpec = TypeSpec.classBuilder("Client")
         val okHttpClientType = bestGuess("okhttp3.OkHttpClient")
         val objectMapperType = bestGuess("com.fasterxml.jackson.databind.ObjectMapper")
         typeSpec.primaryConstructor(
@@ -56,7 +54,10 @@ class OkHttpClientInterfaceGenerator(
         operation.paramDescriptors.forEach { paramDescriptor ->
             funSpec.addParameter(paramDescriptor.name, resolveType(paramDescriptor.typePropertyDescriptor))
         }
-        funSpec.returns(bestGuess("$basePackageName.${operation.responseBody.clsName}"))
+        operation.requestBody?.let { requestBody ->
+            funSpec.addParameter("requestBody", ClassName(basePackageName, requestBody.clsName))
+        }
+        funSpec.returns(ClassName(basePackageName, operation.responseBody.clsName))
         val path = operation.path.split("/").joinToString("/") {
             if (it.startsWith("{")) {
                 val paramName = it.substring(1 until it.length - 1)
@@ -87,10 +88,59 @@ class OkHttpClientInterfaceGenerator(
         })
 
         funSpec.addCode(buildCodeBlock {
-            addStatement("return httpClient.newCall(%T.Builder()", bestGuess("okhttp3.Request"))
+            addStatement("val requestBuilder = %T.Builder()", bestGuess("okhttp3.Request"))
+                .withIndent {
+                    addStatement(".url(url)")
+                }
+        })
+
+        if (operation.requestBody != null) {
+            funSpec.addCode(buildCodeBlock {
+                addStatement("when (val body = requestBody) {")
+                withIndent {
+                    operation.requestBody.contentTypeToType.forEach { (mediaType, type) ->
+                        val cls = ClassName(basePackageName, operation.requestBody.clsName + "." + mediaType.clsName)
+                        val toRequestBody = MemberName("okhttp3.RequestBody.Companion", "toRequestBody")
+                        val toMediaType = MemberName("okhttp3.MediaType.Companion", "toMediaType")
+                        val propertyName = (type as TypeDescriptor.Object).clsName.decapitalized()
+
+                        add("is %T -> requestBuilder.post(", cls)
+                        when (mediaType) {
+                            RequestBodyMediaType.FormData -> {
+                                addStatement("%T.Builder()", ClassName("okhttp3", "FormBody"))
+                                withIndent {
+                                    type.properties.forEach { property ->
+                                        addStatement(
+                                            ".add(%S, %L.toString())",
+                                            property.name,
+                                            "body.$propertyName.${property.name}"
+                                        )
+                                    }
+                                }
+                                addStatement(".build()")
+                            }
+
+                            RequestBodyMediaType.Json -> {
+                                add(
+                                    "objectMapper.writeValueAsString(%L).%M(\"application/json\".%M())",
+                                    "body.$propertyName",
+                                    toRequestBody,
+                                    toMediaType
+                                )
+                            }
+
+                            RequestBodyMediaType.Xml -> add("TODO(\"Not implemented\")")
+                        }
+                        addStatement(")")
+                    }
+                }
+                addStatement("}")
+            })
+        }
+
+        funSpec.addCode(buildCodeBlock {
+            addStatement("return httpClient.newCall(requestBuilder.build())")
                 .indent()
-                .addStatement(".url(url)")
-                .addStatement(".build())")
                 .addStatement(".execute()")
                 .addStatement(".use {")
                 .indent()
@@ -107,13 +157,25 @@ class OkHttpClientInterfaceGenerator(
             if (!operation.responseBody.isSingle) {
                 addStatement("when (it.code) {")
                 indent()
-                operation.responseBody.statusCodeToClsName.forEach { status, itemDescriptor ->
-                    addStatement(
-                        "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
-                        if (status == "default") "else" else status,
-                        ClassName(basePackageName, operation.responseBody.clsName + "." + itemDescriptor),
-                        ClassName(basePackageName, itemDescriptor)
+                operation.responseBody.statusCodeToClsName.forEach { (status, itemDescriptor) ->
+                    val statusCode = if (status == "default") "else" else status
+                    val cls = ClassName(
+                        basePackageName, operation.responseBody.clsName + "." +
+                                itemDescriptor.clsName
                     )
+                    val optionCls = ClassName(basePackageName, itemDescriptor.clsName)
+                    when (itemDescriptor) {
+                        is ResponseBodySealedOption.JustStatus -> {
+                            addStatement("%L -> %T", statusCode, cls)
+                        }
+
+                        is ResponseBodySealedOption.Parametrized -> {
+                            addStatement(
+                                "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
+                                statusCode, cls, optionCls
+                            )
+                        }
+                    }
                 }
                 unindent()
                 addStatement("}")
@@ -127,7 +189,7 @@ class OkHttpClientInterfaceGenerator(
         val baseType = when (paramDescriptor.type) {
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
-            TypeDescriptor.StringType -> String::class.java.asTypeName()
+            TypeDescriptor.StringType -> ClassName("kotlin", "String")
             else -> error("Unsupported type")
         }
         return baseType.copy(nullable = !paramDescriptor.required)
