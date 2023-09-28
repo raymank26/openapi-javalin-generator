@@ -35,10 +35,10 @@ data class RequestBody(
     val required: Boolean
 )
 
-sealed class RequestBodyMediaType(val clsName: String) {
-    data object Json : RequestBodyMediaType("Json")
-    data object Xml : RequestBodyMediaType("Xml")
-    data object FormData : RequestBodyMediaType("Form")
+sealed class RequestBodyMediaType(val clsName: String, val mediaType: String) {
+    data object Json : RequestBodyMediaType("Json", "application/json")
+    data object Xml : RequestBodyMediaType("Xml", "application/xml")
+    data object FormData : RequestBodyMediaType("Form", "application/x-www-form-urlencoded")
 }
 
 

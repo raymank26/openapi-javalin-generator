@@ -27,6 +27,14 @@ class ServerInterfaceGenerator(
                     )
                 )
             }
+            if (operationDescriptor.requestBody != null) {
+                funBuilder.addParameter(
+                    ParameterSpec(
+                        "requestBody",
+                        ClassName(basePackageName, operationDescriptor.requestBody.clsName)
+                    )
+                )
+            }
             funBuilder.returns(
                 getParamTypeName(
                     operationDescriptor.responseBody.clsName,

@@ -20,7 +20,7 @@ class PetServer : Server {
         TODO("Not yet implemented")
     }
 
-    override fun createPet(): CreatePetResponse {
+    override fun createPet(requestBody: CreatePetRequest): CreatePetResponse {
         TODO("Not yet implemented")
     }
 
