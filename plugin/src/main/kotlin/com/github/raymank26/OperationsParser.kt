@@ -4,7 +4,6 @@ import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.Schema
 import io.swagger.v3.oas.models.parameters.Parameter
-import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import org.gradle.configurationcache.extensions.capitalized
 
@@ -43,29 +42,43 @@ class OperationsParser(private val spec: OpenAPI) {
             summary = operation.summary,
             operationId = operation.operationId,
             paramDescriptors = parseParameters(operation.parameters ?: emptyList()),
-            requestBody = parseRequestBody(operation.requestBody),
+            requestBody = parseRequestBody(operation),
             responseBody = parseResponses(operation, operation.responses),
         )
     }
 
-    private fun parseRequestBody(requestBody: io.swagger.v3.oas.models.parameters.RequestBody?): RequestBody? {
-        if (requestBody == null) {
-            return null
-        }
+    private fun parseRequestBody(operation: Operation): RequestBody? {
+        val requestBody = operation.requestBody ?: return null
         val required = requestBody.required ?: false
+        val definitions = requestBody.content.mapNotNull { (mediaType, definition) ->
+            val ref = definition.schema.`$ref`
+            if (definition.schema.`$ref` == null) {
+                // TODO: Need to support non ref types"
+                return@mapNotNull null
+            }
+            val clsName = definition.schema.`$ref`.split("/").last()
+            val schema = spec.components.schemas[clsName]!!
+            val optionName = when (mediaType) {
+                "application/json" -> "Json"
+                "application/xml" -> "Xml"
+                "application/x-www-form-urlencoded" -> "Form"
+                else -> error("Not implemented")
+            }
+            optionName to parseTypeDescriptor(ref, clsName, schema)
+        }.toMap()
+        val type = TypeDescriptor.OneOf(operation.operationId.capitalized() + "Request", definitions)
 
-
-        TODO("Not yet implemented")
+        return RequestBody(definitions, type, required)
     }
 
     private fun parseResponses(operation: Operation, responses: ApiResponses): ResponseBody {
         val codeToDescriptor: Map<String, TypeDescriptor?> = responses.map { (code, response) ->
-            val responseCls = response.content["application/json"]
+            val responseCls = response.content?.get("application/json")
             val descriptor = if (responseCls != null) {
                 val ref = responseCls.schema.`$ref`
                 val clsName = ref.split("/").last()
                 val schema = spec.components.schemas[clsName]!!
-                parseTypeDescriptor(ref, clsName, response, schema)
+                parseTypeDescriptor(ref, clsName, schema)
             } else null
 
             code to descriptor
@@ -78,9 +91,9 @@ class OperationsParser(private val spec: OpenAPI) {
                 is TypeDescriptor.Object -> ResponseBodySealedOption.Parametrized(typeDescriptor.clsName)
                 is TypeDescriptor.Array -> ResponseBodySealedOption.Parametrized(typeDescriptor.clsName)
                 null -> when (code) {
-                    "200" -> ResponseBodySealedOption.JustStatus("Ok", 200)
-                    "201" -> ResponseBodySealedOption.JustStatus("Created", 201)
-                    "404" -> ResponseBodySealedOption.JustStatus("NotFound", 404)
+                    "200" -> ResponseBodySealedOption.JustStatus("Ok")
+                    "201" -> ResponseBodySealedOption.JustStatus("Created")
+                    "404" -> ResponseBodySealedOption.JustStatus("NotFound")
                     else -> error("Cannot infer name from code = $code")
                 }
                 else -> error("Cannot infer name")
@@ -100,16 +113,14 @@ class OperationsParser(private val spec: OpenAPI) {
     private fun parseTypeDescriptor(
         ref: String,
         clsName: String,
-        response: ApiResponse,
         schema: Schema<Any>
     ): TypeDescriptor {
-//        ref. // name
         val result = when (schema.type) {
             "array" -> {
                 val itemRef = schema.items.`$ref`
                 val itemClsName = itemRef.split("/").last()
                 val itemSchema = spec.components.schemas[itemClsName]!!
-                refsBuilder.addRef(itemRef, parseTypeDescriptor(itemRef, itemClsName, response, itemSchema))
+                refsBuilder.addRef(itemRef, parseTypeDescriptor(itemRef, itemClsName, itemSchema))
                 TypeDescriptor.Array(clsName, TypeDescriptor.RefType(itemRef!!))
             }
 

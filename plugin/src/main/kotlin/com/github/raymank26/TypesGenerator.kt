@@ -19,6 +19,9 @@ class TypesGenerator(
         }
         specMetadata.operations.forEach { operationDescriptor ->
             generateTypeDescriptor(operationDescriptor.responseBody.type, true)
+            if (operationDescriptor.requestBody != null) {
+                generateTypeDescriptor(operationDescriptor.requestBody.type, true)
+            }
         }
     }
 

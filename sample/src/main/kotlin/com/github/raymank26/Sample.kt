@@ -1,9 +1,6 @@
 package com.github.raymank26
 
-import foo.JavalinController
-import foo.ListPetsResponse
-import foo.Server
-import foo.ShowPetByIdResponse
+import foo.*
 import io.javalin.Javalin
 
 object Sample {
@@ -20,6 +17,10 @@ object Sample {
 
 class PetServer : Server {
     override fun listPets(limit: Int): ListPetsResponse {
+        TODO("Not yet implemented")
+    }
+
+    override fun createPet(): CreatePetResponse {
         TODO("Not yet implemented")
     }
 

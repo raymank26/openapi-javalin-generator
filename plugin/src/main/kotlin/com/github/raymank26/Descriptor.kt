@@ -18,14 +18,9 @@ data class ResponseBody(
 )
 
 sealed class ResponseBodySealedOption(val clsName: String) {
-    class JustStatus(clsName: String, code: Int) : ResponseBodySealedOption(clsName)
+    class JustStatus(clsName: String) : ResponseBodySealedOption(clsName)
     class Parametrized(clsName: String) : ResponseBodySealedOption(clsName)
 }
-
-data class ResponseBodyItemDescriptor(
-    val wrapperClsName: String,
-    val itemClsName: String,
-)
 
 data class ParamDescriptor(
     val name: String,
@@ -33,7 +28,11 @@ data class ParamDescriptor(
     val typePropertyDescriptor: TypePropertyDescriptor
 )
 
-data class RequestBody(val contentTypeToType: Map<String, TypeDescriptor>, val required: Boolean)
+data class RequestBody(
+    val contentTypeToType: Map<String, TypeDescriptor>,
+    val type: TypeDescriptor,
+    val required: Boolean
+)
 
 sealed interface TypeDescriptor {
 
