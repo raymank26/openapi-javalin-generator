@@ -54,7 +54,10 @@ class OkHttpClientInterfaceGenerator(
         operation.paramDescriptors.forEach { paramDescriptor ->
             funSpec.addParameter(paramDescriptor.name, resolveType(paramDescriptor.typePropertyDescriptor))
         }
-        funSpec.returns(bestGuess("$basePackageName.${operation.responseBody.clsName}"))
+        operation.requestBody?.let { requestBody ->
+            funSpec.addParameter("requestBody", ClassName(basePackageName, requestBody.clsName))
+        }
+        funSpec.returns(ClassName(basePackageName, operation.responseBody.clsName))
         val path = operation.path.split("/").joinToString("/") {
             if (it.startsWith("{")) {
                 val paramName = it.substring(1 until it.length - 1)
@@ -85,10 +88,59 @@ class OkHttpClientInterfaceGenerator(
         })
 
         funSpec.addCode(buildCodeBlock {
-            addStatement("return httpClient.newCall(%T.Builder()", bestGuess("okhttp3.Request"))
+            addStatement("val requestBuilder = %T.Builder()", bestGuess("okhttp3.Request"))
+                .withIndent {
+                    addStatement(".url(url)")
+                }
+        })
+
+        if (operation.requestBody != null) {
+            funSpec.addCode(buildCodeBlock {
+                addStatement("when (val body = requestBody) {")
+                withIndent {
+                    operation.requestBody.contentTypeToType.forEach { (mediaType, type) ->
+                        val cls = ClassName(basePackageName, operation.requestBody.clsName + "." + mediaType.clsName)
+                        val toRequestBody = MemberName("okhttp3.RequestBody.Companion", "toRequestBody")
+                        val toMediaType = MemberName("okhttp3.MediaType.Companion", "toMediaType")
+                        val propertyName = (type as TypeDescriptor.Object).clsName.decapitalized()
+
+                        add("is %T -> requestBuilder.post(", cls)
+                        when (mediaType) {
+                            RequestBodyMediaType.FormData -> {
+                                addStatement("%T.Builder()", ClassName("okhttp3", "FormBody"))
+                                withIndent {
+                                    type.properties.forEach { property ->
+                                        addStatement(
+                                            ".add(%S, %L.toString())",
+                                            property.name,
+                                            "body.$propertyName.${property.name}"
+                                        )
+                                    }
+                                }
+                                addStatement(".build()")
+                            }
+
+                            RequestBodyMediaType.Json -> {
+                                add(
+                                    "objectMapper.writeValueAsString(%L).%M(\"application/json\".%M())",
+                                    "body.$propertyName",
+                                    toRequestBody,
+                                    toMediaType
+                                )
+                            }
+
+                            RequestBodyMediaType.Xml -> add("TODO(\"Not implemented\")")
+                        }
+                        addStatement(")")
+                    }
+                }
+                addStatement("}")
+            })
+        }
+
+        funSpec.addCode(buildCodeBlock {
+            addStatement("return httpClient.newCall(requestBuilder.build())")
                 .indent()
-                .addStatement(".url(url)")
-                .addStatement(".build())")
                 .addStatement(".execute()")
                 .addStatement(".use {")
                 .indent()

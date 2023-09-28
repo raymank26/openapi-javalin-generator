@@ -29,10 +29,18 @@ data class ParamDescriptor(
 )
 
 data class RequestBody(
-    val contentTypeToType: Map<String, TypeDescriptor>,
+    val clsName: String,
+    val contentTypeToType: Map<RequestBodyMediaType, TypeDescriptor>,
     val type: TypeDescriptor,
     val required: Boolean
 )
+
+sealed class RequestBodyMediaType(val clsName: String) {
+    data object Json : RequestBodyMediaType("Json")
+    data object Xml : RequestBodyMediaType("Xml")
+    data object FormData : RequestBodyMediaType("Form")
+}
+
 
 sealed interface TypeDescriptor {
 

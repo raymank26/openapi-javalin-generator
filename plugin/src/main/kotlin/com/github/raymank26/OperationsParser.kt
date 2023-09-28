@@ -59,16 +59,17 @@ class OperationsParser(private val spec: OpenAPI) {
             val clsName = definition.schema.`$ref`.split("/").last()
             val schema = spec.components.schemas[clsName]!!
             val optionName = when (mediaType) {
-                "application/json" -> "Json"
-                "application/xml" -> "Xml"
-                "application/x-www-form-urlencoded" -> "Form"
+                "application/json" -> RequestBodyMediaType.Json
+                "application/xml" -> RequestBodyMediaType.Xml
+                "application/x-www-form-urlencoded" -> RequestBodyMediaType.FormData
                 else -> error("Not implemented")
             }
             optionName to parseTypeDescriptor(ref, clsName, schema)
         }.toMap()
-        val type = TypeDescriptor.OneOf(operation.operationId.capitalized() + "Request", definitions)
+        val clsName = operation.operationId.capitalized() + "Request"
+        val type = TypeDescriptor.OneOf(clsName, definitions.mapKeys { it.key.clsName })
 
-        return RequestBody(definitions, type, required)
+        return RequestBody(clsName, definitions, type, required)
     }
 
     private fun parseResponses(operation: Operation, responses: ApiResponses): ResponseBody {
