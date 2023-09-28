@@ -49,7 +49,7 @@ class SampleTest {
     }
 
     @Test
-    fun shouldCreatePet() {
+    fun shouldCreatePetFormData() {
         // given
         val pet = Pet(5, "Tiger", "animal")
 
@@ -62,6 +62,22 @@ class SampleTest {
         // then
         Assertions.assertEquals(pet, showResponse.pet)
     }
+
+    @Test
+    fun shouldCreatePetFormJson() {
+        // given
+        val pet = Pet(5, "Tiger", "animal")
+
+        // when
+        val createResponse = petClinicClient.createPet(CreatePetRequest.Json(pet))
+        val showResponse = petClinicClient.showPetById(5.toString()) as ShowPetByIdResponse.Pet
+
+        Assertions.assertInstanceOf(CreatePetResponse.Created::class.java, createResponse)
+
+        // then
+        Assertions.assertEquals(pet, showResponse.pet)
+    }
+
 }
 
 class PetServer : Server {
@@ -81,7 +97,11 @@ class PetServer : Server {
     }
 
     override fun createPet(requestBody: CreatePetRequest): CreatePetResponse {
-        val pet = (requestBody as CreatePetRequest.Form).pet
+        val pet = when (requestBody) {
+            is CreatePetRequest.Form -> requestBody.pet
+            is CreatePetRequest.Json -> requestBody.pet
+            is CreatePetRequest.Xml -> TODO()
+        }
         pets[pet.id] = pet
         return CreatePetResponse.Created
     }

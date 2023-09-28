@@ -72,7 +72,7 @@ class JavalinControllerGenerator(
                             .withIndent {
                                 val requestBodyBlock = if (requestBody != null) {
                                     buildCodeBlock {
-                                        addStatement("val body = when (ctx.contentType()) {")
+                                        addStatement("val body = when (ctx.contentType()?.split(\";\")?.first()) {")
                                         withIndent {
                                             requestBody.contentTypeToType.forEach { (key, value): Map.Entry<RequestBodyMediaType, TypeDescriptor> ->
                                                 val parser = when (key) {
