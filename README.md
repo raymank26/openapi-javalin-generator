@@ -1,3 +1,5 @@
+[![CI](https://github.com/raymank26/openapi-javalin-generator/actions/workflows/ci.yml/badge.svg)](https://github.com/raymank26/openapi-javalin-generator/actions/workflows/ci.yml)
+
 # Overview
 
 Status: proof of concept
