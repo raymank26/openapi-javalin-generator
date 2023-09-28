@@ -100,7 +100,7 @@ class PetServer : Server {
         val pet = when (requestBody) {
             is CreatePetRequest.Form -> requestBody.pet
             is CreatePetRequest.Json -> requestBody.pet
-            is CreatePetRequest.Xml -> TODO()
+            is CreatePetRequest.Xml -> requestBody.pet
         }
         pets[pet.id] = pet
         return CreatePetResponse.Created
