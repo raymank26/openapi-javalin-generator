@@ -78,6 +78,15 @@ class SampleTest {
         Assertions.assertEquals(pet, showResponse.pet)
     }
 
+    @Test
+    fun shouldProcessRedirectHeader() {
+        val response = petClinicClient.redirectUser() as RedirectUserResponse.Redirect
+
+        Assertions.assertEquals(
+            response.redirectUserResponseRedirectHeaders,
+            RedirectUserResponseRedirectHeaders("https://google.com")
+        )
+    }
 }
 
 class PetServer : Server {
@@ -88,9 +97,13 @@ class PetServer : Server {
         reInit()
     }
 
+    override fun redirectUser(): RedirectUserResponse {
+        return RedirectUserResponse.Redirect(RedirectUserResponseRedirectHeaders("https://google.com"))
+    }
+
     override fun listPets(limit: Int): ListPetsResponse {
         return if (limit > 0) {
-            ListPetsResponse.Pets(Pets(pets.values.toList().take(limit)))
+            ListPetsResponse.Pets(Pets(pets.values.toList().take(limit)), ListPetsResponsePetsHeaders(null))
         } else {
             ListPetsResponse.Error(Error(400, "Limit <= 0"))
         }

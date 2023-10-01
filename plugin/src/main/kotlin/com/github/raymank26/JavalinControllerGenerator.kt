@@ -148,6 +148,7 @@ class JavalinControllerGenerator(
                                                         val statusCode = if (code == "default")
                                                             "response.${option.clsName.decapitalized()}.code"
                                                         else code
+                                                        addHeaders(option)
                                                         addStatement("ctx.status(%L)", statusCode)
                                                         if (option is ResponseBodySealedOption.Parametrized) {
                                                             addStatement(
@@ -172,6 +173,29 @@ class JavalinControllerGenerator(
             .addType(typeBuilder.build())
             .build()
             .writeTo(baseGenerationPath)
+    }
+}
+
+private fun CodeBlock.Builder.addHeaders(option: ResponseBodySealedOption) {
+    if (option.headers == null) {
+        return
+    }
+    option.headers.properties.forEach { header ->
+        val headerName = if (header.name.contains("-")) {
+            "`${header.name}`"
+        } else {
+            header.name
+        }
+        val propertyRef = "response.${option.headers.clsName.decapitalized()}.${headerName}"
+        if (header.required) {
+            addStatement("ctx.header(%S, %L)", header.name, propertyRef)
+        } else {
+            addStatement("if (%L != null) {", propertyRef)
+            withIndent {
+                addStatement("ctx.header(%S, %L)", header.name, propertyRef)
+            }
+            addStatement("}")
+        }
     }
 }
 

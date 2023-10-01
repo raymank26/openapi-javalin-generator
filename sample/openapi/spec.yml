@@ -17,8 +17,8 @@ paths:
           description: "302 response"
           headers:
             Location:
+              required: true
               schema:
-                required: true
                 type: string
         default:
           description: unexpected error
