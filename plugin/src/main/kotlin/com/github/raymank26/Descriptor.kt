@@ -17,10 +17,14 @@ data class ResponseBody(
     val isSingle: Boolean,
 )
 
-sealed class ResponseBodySealedOption(val clsName: String) {
-    class JustStatus(clsName: String) : ResponseBodySealedOption(clsName)
-    class Parametrized(clsName: String) : ResponseBodySealedOption(clsName)
+sealed class ResponseBodySealedOption(val clsName: String, val headers: TypeDescriptor.Object?) {
+    class JustStatus(clsName: String, headers: TypeDescriptor.Object?) : ResponseBodySealedOption(clsName, headers)
+    class Parametrized(clsName: String, headers: TypeDescriptor.Object?) : ResponseBodySealedOption(clsName, headers)
 }
+
+data class ResponseHeader(
+    val typePropertyDescriptor: TypePropertyDescriptor
+)
 
 data class ParamDescriptor(
     val name: String,
@@ -48,7 +52,7 @@ sealed interface TypeDescriptor {
 
     data class Object(val clsName: String, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
 
-    data class OneOf(val clsName: String, val typeDescriptors: Map<String, TypeDescriptor?>) : TypeDescriptor
+    data class OneOf(val clsName: String, val typeDescriptors: Map<String, List<TypeDescriptor>>) : TypeDescriptor
 
     data object StringType : TypeDescriptor
 

@@ -67,47 +67,73 @@ class OperationsParser(private val spec: OpenAPI) {
             optionName to parseTypeDescriptor(ref, clsName, schema)
         }.toMap()
         val clsName = operation.operationId.capitalized() + "Request"
-        val type = TypeDescriptor.OneOf(clsName, definitions.mapKeys { it.key.clsName })
+        val type = TypeDescriptor.OneOf(
+            clsName, definitions
+                .map { entry -> entry.key.clsName to listOf(entry.value) }.toMap()
+        )
 
         return RequestBody(clsName, definitions, type, required)
     }
 
     private fun parseResponses(operation: Operation, responses: ApiResponses): ResponseBody {
-        val codeToDescriptor: Map<String, TypeDescriptor?> = responses.map { (code, response) ->
+
+        val clsName = operation.operationId.capitalized() + "Response"
+        val codeToSealedOption = mutableMapOf<String, ResponseBodySealedOption>()
+        val clsNameToTypeDescriptor = mutableMapOf<String, List<TypeDescriptor>>()
+
+        responses.forEach { (code, response) ->
             val responseCls = response.content?.get("application/json")
+            val headers = response.headers?.map {
+                ResponseHeader(getTypePropertyDescriptor(it.key.decapitalized(), it.value.schema, it.value.required))
+            } ?: emptyList()
+
             val descriptor = if (responseCls != null) {
                 val ref = responseCls.schema.`$ref`
                 val clsName = ref.split("/").last()
                 val schema = spec.components.schemas[clsName]!!
                 parseTypeDescriptor(ref, clsName, schema)
             } else null
+            val headersDescriptorProvider = { optionClsName: String ->
+                if (headers.isNotEmpty()) {
+                    TypeDescriptor.Object(
+                        clsName + optionClsName + "Headers",
+                        headers.map { it.typePropertyDescriptor })
+                } else null
+            }
 
-            code to descriptor
-        }.toMap()
+            val option = createResponseOption(code, descriptor, headersDescriptorProvider)
+            codeToSealedOption[code] = option
+            clsNameToTypeDescriptor[option.clsName] = listOfNotNull(descriptor, option.headers)
+        }
+        return ResponseBody(codeToSealedOption, clsName, TypeDescriptor.OneOf(clsName, clsNameToTypeDescriptor), false)
+    }
 
-        val codeToSealedOption = mutableMapOf<String, ResponseBodySealedOption>()
-        val clsNameToTypeDescriptor = mutableMapOf<String, TypeDescriptor?>()
-        for ((code: String, typeDescriptor: TypeDescriptor?) in codeToDescriptor) {
-            val itemOption = when (typeDescriptor) {
-                is TypeDescriptor.Object -> ResponseBodySealedOption.Parametrized(typeDescriptor.clsName)
-                is TypeDescriptor.Array -> ResponseBodySealedOption.Parametrized(typeDescriptor.clsName)
-                null -> when (code) {
-                    "200" -> ResponseBodySealedOption.JustStatus("Ok")
-                    "201" -> ResponseBodySealedOption.JustStatus("Created")
-                    "404" -> ResponseBodySealedOption.JustStatus("NotFound")
+    private fun createResponseOption(
+        code: String,
+        descriptor: TypeDescriptor?,
+        headersProvider: (String) -> TypeDescriptor.Object?
+    ): ResponseBodySealedOption {
+        return when (descriptor) {
+            is TypeDescriptor.Object -> ResponseBodySealedOption.Parametrized(
+                descriptor.clsName,
+                headersProvider(descriptor.clsName)
+            )
+
+            is TypeDescriptor.Array -> ResponseBodySealedOption.Parametrized(
+                descriptor.clsName,
+                headersProvider(descriptor.clsName)
+            )
+
+            else -> {
+                val clsName = when (code) {
+                    "200" -> "Ok"
+                    "201" -> "Created"
+                    "404" -> "NotFound"
+                    "302" -> "Redirect"
                     else -> error("Cannot infer name from code = $code")
                 }
-                else -> error("Cannot infer name")
+                ResponseBodySealedOption.JustStatus(clsName, headersProvider(clsName))
             }
-            codeToSealedOption[code] = itemOption
-            clsNameToTypeDescriptor[itemOption.clsName] = typeDescriptor
-        }
-        return if (codeToDescriptor.size > 1) {
-            val clsName = operation.operationId.capitalized() + "Response"
-            ResponseBody(codeToSealedOption, clsName, TypeDescriptor.OneOf(clsName, clsNameToTypeDescriptor), false)
-        } else {
-            val clsOption = codeToSealedOption[codeToSealedOption.keys.first()]!!
-            ResponseBody(codeToSealedOption, clsOption.clsName, clsNameToTypeDescriptor[clsOption.clsName]!!, true)
         }
     }
 

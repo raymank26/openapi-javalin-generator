@@ -97,42 +97,45 @@ class TypesGenerator(
                 val name = value.clsName
                 val responseTypeBuilder = TypeSpec.interfaceBuilder(name)
                     .addModifiers(KModifier.SEALED)
-                val typeName = bestGuess("$basePackageName.$name")
+                val typeName = ClassName(basePackageName, name)
 
-                value.typeDescriptors.forEach { (name, description: TypeDescriptor?) ->
-                    val subType = description?.let { generateTypeDescriptor(it, true) }
-                    if (subType != null) {
+                value.typeDescriptors.forEach { (clsName: String, descriptions: List<TypeDescriptor>) ->
+
+
+                    val constructorBuilder = FunSpec.constructorBuilder()
+                    val properties = mutableListOf<PropertySpec>()
+
+                    descriptions.forEach { description ->
+                        val subType = generateTypeDescriptor(description, true)
                         val simpleName = (subType as ClassName).simpleName
 
-                        val subTypeSpec = TypeSpec.classBuilder(name)
-                            .addModifiers(KModifier.DATA)
-                            .addSuperinterface(typeName)
-                            .primaryConstructor(
-                                FunSpec.constructorBuilder()
-                                    .addParameter(
-                                        ParameterSpec
-                                            .builder(simpleName.decapitalized(), subType)
-                                            .build()
-                                    )
-                                    .build()
-                            )
-                            .addProperty(
-                                PropertySpec.builder(simpleName.decapitalized(), subType)
-                                    .initializer(simpleName.decapitalized())
-                                    .build()
-                            )
-
-                            .build()
-
-                        responseTypeBuilder.addType(subTypeSpec)
-                    } else {
-                        responseTypeBuilder.addType(
-                            TypeSpec.objectBuilder(name)
-                                .addModifiers(KModifier.DATA)
-                                .addSuperinterface(typeName)
+                        constructorBuilder.addParameter(
+                            ParameterSpec
+                                .builder(simpleName.decapitalized(), subType)
+                                .build()
+                        )
+                        properties.add(
+                            PropertySpec.builder(simpleName.decapitalized(), subType)
+                                .initializer(simpleName.decapitalized())
                                 .build()
                         )
                     }
+
+                    val subTypeSpec = if (properties.isNotEmpty()) {
+                        TypeSpec.classBuilder(clsName)
+                            .addSuperinterface(typeName)
+                            .addModifiers(KModifier.DATA)
+                            .primaryConstructor(constructorBuilder.build())
+                            .addProperties(properties)
+                            .build()
+                    } else {
+                        TypeSpec.objectBuilder(clsName)
+                            .addSuperinterface(typeName)
+                            .addModifiers(KModifier.DATA)
+                            .build()
+                    }
+
+                    responseTypeBuilder.addType(subTypeSpec)
                 }
                 FileSpec.builder(basePackageName, value.clsName)
                     .addType(responseTypeBuilder.build())

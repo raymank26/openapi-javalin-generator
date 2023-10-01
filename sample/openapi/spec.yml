@@ -7,6 +7,25 @@ info:
 servers:
   - url: http://petstore.swagger.io/v1
 paths:
+  /redirectUser:
+    post:
+      summary: Redirect user to a given url
+      operationId: redirectUser
+
+      responses:
+        "302":
+          description: "302 response"
+          headers:
+            Location:
+              schema:
+                required: true
+                type: string
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /pets:
     get:
       summary: List all pets

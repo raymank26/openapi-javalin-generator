@@ -164,18 +164,28 @@ class OkHttpClientInterfaceGenerator(
                                 itemDescriptor.clsName
                     )
                     val optionCls = ClassName(basePackageName, itemDescriptor.clsName)
-                    when (itemDescriptor) {
-                        is ResponseBodySealedOption.JustStatus -> {
-                            addStatement("%L -> %T", statusCode, cls)
-                        }
-
-                        is ResponseBodySealedOption.Parametrized -> {
-                            addStatement(
-                                "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
-                                statusCode, cls, optionCls
-                            )
-                        }
+                    addStatement("%L -> {", statusCode)
+                    withIndent {
+                        prepareResponseConstructor(this, itemDescriptor, operation, statusCode, cls, optionCls)
                     }
+                    addStatement("}")
+//                    when (itemDescriptor) {
+//                        is ResponseBodySealedOption.JustStatus -> {
+////                            addStatement("%L -> %T", statusCode, cls)
+//                        }
+//
+//                        is ResponseBodySealedOption.Parametrized -> {
+//                            addStatement("%L -> {")
+//                            prepareResponseContructor(this, itemDescriptor, statusCode, cls, optionCls)
+//                            addStatement("}")
+//
+////
+////                            addStatement(
+////                                "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
+////                                statusCode, cls, optionCls
+////                            )
+//                        }
+//                    }
                 }
                 unindent()
                 addStatement("}")
@@ -183,6 +193,54 @@ class OkHttpClientInterfaceGenerator(
                 TODO()
             }
         }
+    }
+
+    private fun prepareResponseConstructor(
+        codeBlock: CodeBlock.Builder,
+        itemDescriptor: ResponseBodySealedOption,
+        operation: OperationDescriptor,
+        statusCode: String,
+        cls: ClassName,
+        optionCls: ClassName
+    ) {
+        codeBlock.apply {
+            when (itemDescriptor) {
+                is ResponseBodySealedOption.JustStatus -> {
+                    add("%T", cls)
+                    if (itemDescriptor.headers != null) {
+                        add("(")
+                        addResponseHeaders(itemDescriptor, operation, cls.simpleName)
+                        addStatement(")")
+                    }
+                    addStatement("")
+                }
+
+                is ResponseBodySealedOption.Parametrized -> {
+                    addStatement("%T(objectMapper.readValue(it.body?.byteStream(), %T::class.java)", cls, optionCls)
+                    if (itemDescriptor.headers != null) {
+                        add(", ")
+                        addResponseHeaders(itemDescriptor, operation, cls.simpleName)
+                    }
+                    addStatement(")")
+                }
+            }
+
+        }
+    }
+
+    private fun CodeBlock.Builder.addResponseHeaders(
+        itemDescriptor: ResponseBodySealedOption,
+        operation: OperationDescriptor,
+        clsName: String
+    ) {
+        val headers = itemDescriptor.headers!!
+
+//        add("%T(", ClassName(basePackageName, ))
+        add("%T(", ClassName(basePackageName, headers.clsName))
+        headers.properties.forEach {
+            addStatement("it.header(%S)%L,", it.name.lowercase(), if (it.required) "!!" else "")
+        }
+        add(")")
     }
 
     private fun resolveType(paramDescriptor: TypePropertyDescriptor): TypeName {
