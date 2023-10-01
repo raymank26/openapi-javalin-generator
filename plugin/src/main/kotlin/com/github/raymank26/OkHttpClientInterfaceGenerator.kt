@@ -13,9 +13,19 @@ class OkHttpClientInterfaceGenerator(
         val typeSpec = TypeSpec.classBuilder("Client")
         val okHttpClientType = bestGuess("okhttp3.OkHttpClient")
         val objectMapperType = bestGuess("com.fasterxml.jackson.databind.ObjectMapper")
+        val okHttpClientBuilder = ClassName("okhttp3", "OkHttpClient", "Builder")
         typeSpec.primaryConstructor(
             FunSpec.constructorBuilder()
                 .addParameter(ParameterSpec("host", ClassName("kotlin", "String")))
+                .addParameter(
+                    ParameterSpec.builder(
+                        "clientConfig", LambdaTypeName.get(
+                            receiver = okHttpClientBuilder, returnType = okHttpClientBuilder
+                        )
+                    )
+                        .defaultValue(CodeBlock.of("{ this }"))
+                        .build()
+                )
                 .build()
         )
         typeSpec.addProperty(
@@ -25,7 +35,7 @@ class OkHttpClientInterfaceGenerator(
         )
         typeSpec.addProperty(
             PropertySpec.builder("httpClient", okHttpClientType, KModifier.PRIVATE)
-                .initializer(CodeBlock.of("%T()", okHttpClientType))
+                .initializer(CodeBlock.of("clientConfig(%T()).build()", okHttpClientBuilder))
                 .build()
         )
 
@@ -94,13 +104,13 @@ class OkHttpClientInterfaceGenerator(
                 }
         })
 
+        val toRequestBody = MemberName("okhttp3.RequestBody.Companion", "toRequestBody")
         if (operation.requestBody != null) {
             funSpec.addCode(buildCodeBlock {
                 addStatement("when (val body = requestBody) {")
                 withIndent {
                     operation.requestBody.contentTypeToType.forEach { (mediaType, type) ->
                         val cls = ClassName(basePackageName, operation.requestBody.clsName + "." + mediaType.clsName)
-                        val toRequestBody = MemberName("okhttp3.RequestBody.Companion", "toRequestBody")
                         val toMediaType = MemberName("okhttp3.MediaType.Companion", "toMediaType")
                         val propertyName = (type as TypeDescriptor.Object).clsName.decapitalized()
 
@@ -136,6 +146,8 @@ class OkHttpClientInterfaceGenerator(
                 }
                 addStatement("}")
             })
+        } else if (operation.method == "post") {
+            funSpec.addStatement("requestBuilder.post(\"\".%M())", toRequestBody)
         }
 
         funSpec.addCode(buildCodeBlock {
@@ -166,26 +178,9 @@ class OkHttpClientInterfaceGenerator(
                     val optionCls = ClassName(basePackageName, itemDescriptor.clsName)
                     addStatement("%L -> {", statusCode)
                     withIndent {
-                        prepareResponseConstructor(this, itemDescriptor, operation, statusCode, cls, optionCls)
+                        prepareResponseConstructor(this, itemDescriptor, operation, cls, optionCls)
                     }
                     addStatement("}")
-//                    when (itemDescriptor) {
-//                        is ResponseBodySealedOption.JustStatus -> {
-////                            addStatement("%L -> %T", statusCode, cls)
-//                        }
-//
-//                        is ResponseBodySealedOption.Parametrized -> {
-//                            addStatement("%L -> {")
-//                            prepareResponseContructor(this, itemDescriptor, statusCode, cls, optionCls)
-//                            addStatement("}")
-//
-////
-////                            addStatement(
-////                                "%L -> %T(objectMapper.readValue(it.body?.byteStream(), %T::class.java))",
-////                                statusCode, cls, optionCls
-////                            )
-//                        }
-//                    }
                 }
                 unindent()
                 addStatement("}")
@@ -199,7 +194,6 @@ class OkHttpClientInterfaceGenerator(
         codeBlock: CodeBlock.Builder,
         itemDescriptor: ResponseBodySealedOption,
         operation: OperationDescriptor,
-        statusCode: String,
         cls: ClassName,
         optionCls: ClassName
     ) {
@@ -209,7 +203,7 @@ class OkHttpClientInterfaceGenerator(
                     add("%T", cls)
                     if (itemDescriptor.headers != null) {
                         add("(")
-                        addResponseHeaders(itemDescriptor, operation, cls.simpleName)
+                        addResponseHeaders(itemDescriptor)
                         addStatement(")")
                     }
                     addStatement("")
@@ -219,7 +213,7 @@ class OkHttpClientInterfaceGenerator(
                     addStatement("%T(objectMapper.readValue(it.body?.byteStream(), %T::class.java)", cls, optionCls)
                     if (itemDescriptor.headers != null) {
                         add(", ")
-                        addResponseHeaders(itemDescriptor, operation, cls.simpleName)
+                        addResponseHeaders(itemDescriptor)
                     }
                     addStatement(")")
                 }
@@ -228,14 +222,9 @@ class OkHttpClientInterfaceGenerator(
         }
     }
 
-    private fun CodeBlock.Builder.addResponseHeaders(
-        itemDescriptor: ResponseBodySealedOption,
-        operation: OperationDescriptor,
-        clsName: String
-    ) {
+    private fun CodeBlock.Builder.addResponseHeaders(itemDescriptor: ResponseBodySealedOption) {
         val headers = itemDescriptor.headers!!
 
-//        add("%T(", ClassName(basePackageName, ))
         add("%T(", ClassName(basePackageName, headers.clsName))
         headers.properties.forEach {
             addStatement("it.header(%S)%L,", it.name.lowercase(), if (it.required) "!!" else "")

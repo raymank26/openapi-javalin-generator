@@ -10,7 +10,9 @@ private val dog = Pet(2, "Dog", "black")
 
 class SampleTest {
 
-    private val petClinicClient = Client("http://localhost:8080")
+    private val petClinicClient = Client("http://localhost:8080", clientConfig = {
+        followRedirects(false)
+    })
 
     companion object {
 
