@@ -178,7 +178,7 @@ class OkHttpClientInterfaceGenerator(
                     val optionCls = ClassName(basePackageName, itemDescriptor.clsName)
                     addStatement("%L -> {", statusCode)
                     withIndent {
-                        prepareResponseConstructor(this, itemDescriptor, operation, cls, optionCls)
+                        addResponseConstructor(itemDescriptor, cls, optionCls)
                     }
                     addStatement("}")
                 }
@@ -190,35 +190,30 @@ class OkHttpClientInterfaceGenerator(
         }
     }
 
-    private fun prepareResponseConstructor(
-        codeBlock: CodeBlock.Builder,
+    private fun CodeBlock.Builder.addResponseConstructor(
         itemDescriptor: ResponseBodySealedOption,
-        operation: OperationDescriptor,
         cls: ClassName,
         optionCls: ClassName
     ) {
-        codeBlock.apply {
-            when (itemDescriptor) {
-                is ResponseBodySealedOption.JustStatus -> {
-                    add("%T", cls)
-                    if (itemDescriptor.headers != null) {
-                        add("(")
-                        addResponseHeaders(itemDescriptor)
-                        addStatement(")")
-                    }
-                    addStatement("")
-                }
-
-                is ResponseBodySealedOption.Parametrized -> {
-                    addStatement("%T(objectMapper.readValue(it.body?.byteStream(), %T::class.java)", cls, optionCls)
-                    if (itemDescriptor.headers != null) {
-                        add(", ")
-                        addResponseHeaders(itemDescriptor)
-                    }
+        when (itemDescriptor) {
+            is ResponseBodySealedOption.JustStatus -> {
+                add("%T", cls)
+                if (itemDescriptor.headers != null) {
+                    add("(")
+                    addResponseHeaders(itemDescriptor)
                     addStatement(")")
                 }
+                addStatement("")
             }
 
+            is ResponseBodySealedOption.Parametrized -> {
+                addStatement("%T(objectMapper.readValue(it.body?.byteStream(), %T::class.java)", cls, optionCls)
+                if (itemDescriptor.headers != null) {
+                    add(", ")
+                    addResponseHeaders(itemDescriptor)
+                }
+                addStatement(")")
+            }
         }
     }
 
