@@ -220,9 +220,11 @@ class OkHttpClientInterfaceGenerator(
     private fun CodeBlock.Builder.addResponseHeaders(itemDescriptor: ResponseBodySealedOption) {
         val headers = itemDescriptor.headers!!
 
-        add("%T(", ClassName(basePackageName, headers.clsName))
-        headers.properties.forEach {
-            addStatement("it.header(%S)%L,", it.name.lowercase(), if (it.required) "!!" else "")
+        addStatement("%T(", ClassName(basePackageName, headers.clsName))
+        withIndent {
+            headers.properties.forEach {
+                addStatement("it.header(%S)%L,", it.name.lowercase(), if (it.required) "!!" else "")
+            }
         }
         add(")")
     }

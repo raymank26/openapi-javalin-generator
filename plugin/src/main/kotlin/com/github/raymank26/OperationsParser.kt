@@ -89,9 +89,9 @@ class OperationsParser(private val spec: OpenAPI) {
 
             val descriptor = if (responseCls != null) {
                 val ref = responseCls.schema.`$ref`
-                val clsName = ref.split("/").last()
-                val schema = spec.components.schemas[clsName]!!
-                parseTypeDescriptor(ref, clsName, schema)
+                val optionClsName = ref.split("/").last()
+                val schema = spec.components.schemas[optionClsName]!!
+                parseTypeDescriptor(ref, optionClsName, schema)
             } else null
             val headersDescriptorProvider = { optionClsName: String ->
                 if (headers.isNotEmpty()) {
