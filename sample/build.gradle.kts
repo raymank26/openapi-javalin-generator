@@ -38,7 +38,11 @@ tasks.test {
 }
 
 configure<JavalinOpenApiPluginExtension> {
-    basePackageName.set("foo")
+    targets {
+        register("sampleTarget") {
+            basePackageName.set("foo")
+        }
+    }
 }
 
 sourceSets {
