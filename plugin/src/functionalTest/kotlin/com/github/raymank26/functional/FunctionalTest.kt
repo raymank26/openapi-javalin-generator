@@ -34,7 +34,12 @@ class FunctionalTest {
                 }
                 
                 javalinOpenApi {
-                    basePackageName = "foo"
+                    targets {
+                        sampleTarget {
+                            basePackageName = "foo"
+                        }
+                    }
+                    
                 }
             """.trimIndent()
             )
