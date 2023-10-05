@@ -22,13 +22,18 @@ The plugin integrates into a build step and reflects all changes of the spec fil
 
 See `sample/src/test/kotlin/SampleTest.kt` for usage example.
 
+# OpenAPI extensions
+
+1. An `info->x-name` key might be used to assign a prefix for Client/Server/Controller generators.
+
+
 # TODO
 
 - [x] Implement GET requests with query and form parameters
 - [x] Generate HTTP response classes
 - [x] Generate Javalin glue code (controller)
+- [x] Support multiple OpenAPI specs in a single module
 - [ ] Implement request validation
-- [ ] Support multiple OpenAPI specs in a single module
 - [ ] Implement auth
 - [ ] Add retry policy and circuit breaker
-- [ ] Implement other than JSON content types.
+- [ ] Implement other than JSON/Form content types.

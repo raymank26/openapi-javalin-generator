@@ -186,9 +186,7 @@ class OperationsParser(private val spec: OpenAPI) {
             "integer" -> TypeDescriptor.IntType
             "string" -> TypeDescriptor.StringType
             "object" -> {
-
                 val clsName = "${name.capitalized()}Properties"
-
                 parseTypeDescriptor(clsName, clsName, property.contentSchema)
             }
             else -> error("not supported type = $type")
