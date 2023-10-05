@@ -67,22 +67,18 @@ class TypesGenerator(
                 alreadyGenerated[name]?.let {
                     return it
                 }
-                val clsBuilder = TypeSpec.classBuilder(name)
-                    .addModifiers(KModifier.DATA)
-                clsBuilder.primaryConstructor(
-                    FunSpec.constructorBuilder()
-                        .addParameters(value.properties
-                            .map { ParameterSpec(it.name, generateTypeDescriptor(it.type, it.required)) })
-                        .build()
-                )
-                value.properties.forEach { property ->
-                    clsBuilder.addProperty(
-                        PropertySpec
-                            .builder(property.name, generateTypeDescriptor(property.type, property.required))
-                            .initializer(property.name)
-                            .build()
+                if (value.properties.isEmpty()) {
+                    return ClassName("kotlin.collections", "Map").parameterizedBy(
+                        listOf(
+                            ClassName("kotlin", "String"),
+                            ClassName("kotlin", "Any").copy(nullable = true)
+                        )
                     )
                 }
+                val clsBuilder = TypeSpec.classBuilder(name)
+                    .addModifiers(KModifier.DATA)
+
+                clsBuilder.addDataProperties(value.properties)
                 val typeSpec = clsBuilder.build()
                 FileSpec.builder(basePackageName, value.clsName)
                     .addType(typeSpec)
@@ -100,7 +96,6 @@ class TypesGenerator(
                 val typeName = ClassName(basePackageName, name)
 
                 value.typeDescriptors.forEach { (clsName: String, descriptions: List<TypeDescriptor>) ->
-
 
                     val constructorBuilder = FunSpec.constructorBuilder()
                     val properties = mutableListOf<PropertySpec>()
@@ -148,5 +143,23 @@ class TypesGenerator(
             TypeDescriptor.StringType -> ClassName("kotlin", "String")
         }
         return basicType.copy(nullable = !required)
+    }
+
+    private fun TypeSpec.Builder.addDataProperties(descriptors: List<TypePropertyDescriptor>) {
+        val constructorProperties = descriptors
+            .map { ParameterSpec(it.name, generateTypeDescriptor(it.type, it.required)) }
+        primaryConstructor(
+            FunSpec.constructorBuilder()
+                .addParameters(constructorProperties)
+                .build()
+        )
+
+        val properties = descriptors.map { property ->
+            PropertySpec
+                .builder(property.name, generateTypeDescriptor(property.type, property.required))
+                .initializer(property.name)
+                .build()
+        }
+        addProperties(properties)
     }
 }

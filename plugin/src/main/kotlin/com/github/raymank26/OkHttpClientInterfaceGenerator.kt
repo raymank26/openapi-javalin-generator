@@ -10,7 +10,7 @@ class OkHttpClientInterfaceGenerator(
     private val baseGenerationPath: Path
 ) {
     fun generateClient() {
-        val typeSpec = TypeSpec.classBuilder("Client")
+        val typeSpec = TypeSpec.classBuilder("${specMetadata.namePrefix}Client")
         val okHttpClientType = bestGuess("okhttp3.OkHttpClient")
         val objectMapperType = bestGuess("com.fasterxml.jackson.databind.ObjectMapper")
         val okHttpClientBuilder = ClassName("okhttp3", "OkHttpClient", "Builder")

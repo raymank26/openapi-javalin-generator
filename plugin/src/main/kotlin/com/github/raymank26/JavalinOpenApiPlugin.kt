@@ -23,7 +23,8 @@ class JavalinOpenApiPlugin : Plugin<Project> {
 
     private fun processOutputTarget(project: Project, outputTarget: OutputTarget) {
         val basePackageName = outputTarget.basePackageName.get()
-        val result = File("${project.projectDir}/openapi/spec.yml")
+        val specName = outputTarget.specName.getOrElse("spec.yml")
+        val result = File("${project.projectDir}/openapi/$specName")
             .reader()
             .use {
                 OpenAPIParser().readContents(it.readText(), null, null)
@@ -32,10 +33,13 @@ class JavalinOpenApiPlugin : Plugin<Project> {
         val spec = result.openAPI
         val operationsParser = OperationsParser(spec)
         val specMetadata = operationsParser.parseSpec()
-        val baseGenerationPath = project.buildDir.toPath()
-            .resolve(Paths.get("generated", "main", "kotlin"))
 
-        project.delete(baseGenerationPath)
+        val generateBasePath = Paths.get("generated", "main", "kotlin")
+        val baseGenerationPath = project.buildDir.toPath()
+            .resolve(generateBasePath)
+
+        val packagePath = outputTarget.basePackageName.get().replace('.', '/')
+        project.delete(baseGenerationPath.resolve(packagePath))
 
         val typesGenerator = TypesGenerator(
             specMetadata = specMetadata,

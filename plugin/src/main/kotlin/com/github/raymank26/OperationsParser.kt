@@ -28,7 +28,8 @@ class OperationsParser(private val spec: OpenAPI) {
             }
             pathOperations
         }
-        return SpecMetadata(spec.info.title, operations, refsBuilder.build())
+        val namePrefix = spec.info.extensions["x-name"]?.toString() ?: ""
+        return SpecMetadata(namePrefix, operations, refsBuilder.build())
     }
 
     private fun parseOperation(
@@ -140,9 +141,9 @@ class OperationsParser(private val spec: OpenAPI) {
     private fun parseTypeDescriptor(
         ref: String,
         clsName: String,
-        schema: Schema<Any>
+        schema: Schema<Any>?
     ): TypeDescriptor {
-        val result = when (schema.type) {
+        val result = when (schema?.type) {
             "array" -> {
                 val itemRef = schema.items.`$ref`
                 val itemClsName = itemRef.split("/").last()
@@ -152,13 +153,14 @@ class OperationsParser(private val spec: OpenAPI) {
             }
 
             "object" -> {
-                val requiredProperties = schema.required.toSet()
+                val requiredProperties = schema.required?.toSet() ?: emptySet()
                 val properties = schema.properties.map { (name, property) ->
                     getTypePropertyDescriptor(name, property, requiredProperties.contains(name))
                 }
                 TypeDescriptor.Object(clsName, properties)
             }
 
+            null -> TypeDescriptor.Object(clsName, emptyList())
             else -> error("not supported type = " + schema.type)
         }
         refsBuilder.addRef(ref, result)
@@ -171,18 +173,24 @@ class OperationsParser(private val spec: OpenAPI) {
         required: Boolean?,
     ) = TypePropertyDescriptor(
         name = name,
-        type = getPropertyType(property),
+        type = getPropertyType(name, property),
         format = property.format,
         required = required ?: false
     )
 
-    private fun getPropertyType(property: Schema<Any>): TypeDescriptor {
+    private fun getPropertyType(name: String, property: Schema<Any>): TypeDescriptor {
         if (property.`$ref` != null) {
             return TypeDescriptor.RefType(property.`$ref`)
         }
         return when (val type = property.type) {
             "integer" -> TypeDescriptor.IntType
             "string" -> TypeDescriptor.StringType
+            "object" -> {
+
+                val clsName = "${name.capitalized()}Properties"
+
+                parseTypeDescriptor(clsName, clsName, property.contentSchema)
+            }
             else -> error("not supported type = $type")
         }
     }
@@ -203,7 +211,7 @@ class OperationsParser(private val spec: OpenAPI) {
 }
 
 data class SpecMetadata(
-    val name: String,
+    val namePrefix: String,
     val operations: List<OperationDescriptor>,
     val refs: Map<String, TypeDescriptor>,
 )

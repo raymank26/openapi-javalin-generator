@@ -10,8 +10,8 @@ class JavalinControllerGenerator(
 ) {
 
     fun generate() {
-        val serverInterfaceType = ClassName(basePackageName, "Server")
-        val typeBuilder = TypeSpec.classBuilder("JavalinController")
+        val serverInterfaceType = ClassName(basePackageName, "${specMetadata.namePrefix}Server")
+        val typeBuilder = TypeSpec.classBuilder("${specMetadata.namePrefix}JavalinController")
             .primaryConstructor(
                 FunSpec.constructorBuilder()
                     .addParameter(

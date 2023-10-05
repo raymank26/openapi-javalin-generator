@@ -11,7 +11,7 @@ class ServerInterfaceGenerator(
 ) {
 
     fun generate() {
-        val typeSpecBuilder = interfaceBuilder("Server")
+        val typeSpecBuilder = interfaceBuilder("${specMetadata.namePrefix}Server")
 
         specMetadata.operations.forEach { operationDescriptor ->
             val funBuilder = FunSpec.builder(operationDescriptor.operationId)

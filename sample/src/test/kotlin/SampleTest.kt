@@ -10,7 +10,7 @@ private val dog = Pet(2, "Dog", "black")
 
 class SampleTest {
 
-    private val petClinicClient = Client("http://localhost:8080", clientConfig = {
+    private val petClinicClient = SampleClient("http://localhost:8080", clientConfig = {
         followRedirects(false)
     })
 
@@ -18,7 +18,7 @@ class SampleTest {
 
         private val javalin: Javalin = Javalin.create()
         private val petServer = PetServer()
-        private val petController = JavalinController(petServer)
+        private val petController = SampleJavalinController(petServer)
 
         @JvmStatic
         @BeforeAll
@@ -91,7 +91,7 @@ class SampleTest {
     }
 }
 
-class PetServer : Server {
+class PetServer : SampleServer {
 
     private lateinit var pets: MutableMap<Int, Pet>
 

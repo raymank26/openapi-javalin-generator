@@ -14,5 +14,7 @@ interface OutputTarget {
 
     val basePackageName: Property<String>
 
+    val specName: Property<String>
+
     val generateServerCode: Property<Boolean>
 }
