@@ -33,13 +33,16 @@ class TypesGenerator(
             is TypeDescriptor.Array -> {
                 val innerTypeName = generateTypeDescriptor(value.itemDescriptor, true)
                 val name = value.clsName
+                val listType = bestGuess("kotlin.collections.List").parameterizedBy(innerTypeName)
+                if (name == null) {
+                    return listType
+                }
 
                 alreadyGenerated[name]?.let {
                     return it
                 }
                 val clsBuilder = TypeSpec.classBuilder(name)
                     .addModifiers(KModifier.DATA)
-                val listType = bestGuess("kotlin.collections.List").parameterizedBy(innerTypeName)
                 clsBuilder.primaryConstructor(
                     FunSpec.constructorBuilder()
                         .addParameter(ParameterSpec(name.decapitalized(), listType))
@@ -63,10 +66,6 @@ class TypesGenerator(
 
             is TypeDescriptor.RefType -> bestGuess(basePackageName + "." + value.name.split("/").last())
             is TypeDescriptor.Object -> {
-                val name = value.clsName
-                alreadyGenerated[name]?.let {
-                    return it
-                }
                 if (value.properties.isEmpty()) {
                     return ClassName("kotlin.collections", "Map").parameterizedBy(
                         listOf(
@@ -74,6 +73,10 @@ class TypesGenerator(
                             ClassName("kotlin", "Any").copy(nullable = true)
                         )
                     )
+                }
+                val name = value.clsName!!
+                alreadyGenerated[name]?.let {
+                    return it
                 }
                 val clsBuilder = TypeSpec.classBuilder(name)
                     .addModifiers(KModifier.DATA)

@@ -48,9 +48,9 @@ sealed class RequestBodyMediaType(val clsName: String, val mediaType: String) {
 
 sealed interface TypeDescriptor {
 
-    data class Array(val clsName: String, val itemDescriptor: TypeDescriptor) : TypeDescriptor
+    data class Array(val clsName: String?, val itemDescriptor: TypeDescriptor) : TypeDescriptor
 
-    data class Object(val clsName: String, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
+    data class Object(val clsName: String?, val properties: List<TypePropertyDescriptor>) : TypeDescriptor
 
     data class OneOf(val clsName: String, val typeDescriptors: Map<String, List<TypeDescriptor>>) : TypeDescriptor
 

@@ -104,7 +104,7 @@ class JavalinControllerGenerator(
                                         requestBody.clsName,
                                         key.clsName
                                     ),
-                                    ClassName(basePackageName, targetObj.clsName)
+                                    ClassName(basePackageName, targetObj.clsName!!)
                                 )
                                 withIndent(3) {
                                     targetObj.properties.forEach { property ->
@@ -131,7 +131,7 @@ class JavalinControllerGenerator(
                                     ),
                                     ClassName(
                                         basePackageName,
-                                        (value as TypeDescriptor.Object).clsName
+                                        (value as TypeDescriptor.Object).clsName!!
                                     )
                                 )
                             }
@@ -194,7 +194,7 @@ private fun CodeBlock.Builder.addHeaders(option: ResponseBodySealedOption) {
         } else {
             header.name
         }
-        val propertyRef = "response.${option.headers.clsName.decapitalized()}.${headerName}"
+        val propertyRef = "response.${option.headers.clsName!!.decapitalized()}.${headerName}"
         if (header.required) {
             addStatement("ctx.header(%S, %L)", header.name, propertyRef)
         } else {

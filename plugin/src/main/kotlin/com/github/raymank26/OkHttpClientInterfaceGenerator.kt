@@ -112,7 +112,7 @@ class OkHttpClientInterfaceGenerator(
                     operation.requestBody.contentTypeToType.forEach { (mediaType, type) ->
                         val cls = ClassName(basePackageName, operation.requestBody.clsName + "." + mediaType.clsName)
                         val toMediaType = MemberName("okhttp3.MediaType.Companion", "toMediaType")
-                        val propertyName = (type as TypeDescriptor.Object).clsName.decapitalized()
+                        val propertyName = (type as TypeDescriptor.Object).clsName!!.decapitalized()
 
                         add("is %T -> requestBuilder.post(", cls)
                         when (mediaType) {
@@ -220,7 +220,7 @@ class OkHttpClientInterfaceGenerator(
     private fun CodeBlock.Builder.addResponseHeaders(itemDescriptor: ResponseBodySealedOption) {
         val headers = itemDescriptor.headers!!
 
-        addStatement("%T(", ClassName(basePackageName, headers.clsName))
+        addStatement("%T(", ClassName(basePackageName, headers.clsName!!))
         withIndent {
             headers.properties.forEach {
                 addStatement("it.header(%S)%L,", it.name.lowercase(), if (it.required) "!!" else "")

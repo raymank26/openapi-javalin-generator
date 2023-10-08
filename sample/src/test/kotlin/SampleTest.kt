@@ -7,6 +7,11 @@ import org.junit.jupiter.api.Test
 
 private val cat = Pet(1, "Cat", "orange")
 private val dog = Pet(2, "Dog", "black")
+private val customPet = CustomPet(
+    listOf(3, 4),
+    listOf("one", "two"),
+    mapOf("someKey" to "someValue")
+)
 
 class SampleTest {
 
@@ -89,6 +94,16 @@ class SampleTest {
             RedirectUserResponseRedirectHeaders("https://google.com")
         )
     }
+
+    @Test
+    fun shouldSubmirCustomPet() {
+        val res = petClinicClient.customPet(
+            CustomPetRequest.Json(
+                customPet
+            )
+        )
+        Assertions.assertEquals(res, CustomPetResponse.Ok)
+    }
 }
 
 class PetServer : SampleServer {
@@ -101,6 +116,11 @@ class PetServer : SampleServer {
 
     override fun redirectUser(): RedirectUserResponse {
         return RedirectUserResponse.Redirect(RedirectUserResponseRedirectHeaders("https://google.com"))
+    }
+
+    override fun customPet(requestBody: CustomPetRequest): CustomPetResponse {
+        require((requestBody as CustomPetRequest.Json).customPet == customPet)
+        return CustomPetResponse.Ok
     }
 
     override fun listPets(limit: Int): ListPetsResponse {

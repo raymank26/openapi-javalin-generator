@@ -27,6 +27,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /customPet:
+    post:
+      summary: Redirect user to a given url
+      operationId: customPet
+      requestBody:
+        description: Optional description in *Markdown*
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomPet'
+      responses:
+        "200":
+          description: "ok"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /pets:
     get:
       summary: List all pets
@@ -119,6 +139,23 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
+    CustomPet:
+      type: "object"
+      required:
+        - stringLabels
+        - intLabels
+        - mappers
+      properties:
+        intLabels:
+          type: array
+          items:
+            type: integer
+        stringLabels:
+          type: array
+          items:
+            type: string
+        mappers:
+          type: object
     Pet:
       type: "object"
       required:
