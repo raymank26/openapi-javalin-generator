@@ -96,7 +96,7 @@ class SampleTest {
     }
 
     @Test
-    fun shouldSubmirCustomPet() {
+    fun shouldSubmitCustomPet() {
         val res = petClinicClient.customPet(
             CustomPetRequest.Json(
                 customPet

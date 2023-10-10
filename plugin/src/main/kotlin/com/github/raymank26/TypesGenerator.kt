@@ -150,7 +150,9 @@ class TypesGenerator(
 
     private fun TypeSpec.Builder.addDataProperties(descriptors: List<TypePropertyDescriptor>) {
         val constructorProperties = descriptors
-            .map { ParameterSpec(it.name, generateTypeDescriptor(it.type, it.required)) }
+            .map {
+                ParameterSpec(it.name.decapitalized(), generateTypeDescriptor(it.type, it.required))
+            }
         primaryConstructor(
             FunSpec.constructorBuilder()
                 .addParameters(constructorProperties)
@@ -158,9 +160,14 @@ class TypesGenerator(
         )
 
         val properties = descriptors.map { property ->
+            val jsonProperty = AnnotationSpec
+                .builder(ClassName("com.fasterxml.jackson.annotation", "JsonProperty"))
+                .addMember("%S", property.name)
+                .build()
             PropertySpec
-                .builder(property.name, generateTypeDescriptor(property.type, property.required))
-                .initializer(property.name)
+                .builder(property.name.decapitalized(), generateTypeDescriptor(property.type, property.required))
+                .initializer(property.name.decapitalized())
+                .addAnnotation(jsonProperty)
                 .build()
         }
         addProperties(properties)
