@@ -209,6 +209,11 @@ class OkHttpClientInterfaceGenerator(
             }
 
             is ResponseBodySealedOption.Parametrized -> {
+                addStatement("if ((it.header(\"Content-Type\")?.indexOf(\"application/json\") ?: -1) < 0) {")
+                withIndent {
+                    addStatement("error(\"Unexpected content, status = \${it.code}, body = \${it.body?.string()}\")")
+                }
+                addStatement("}")
                 addStatement("%T(objectMapper.readValue(it.body?.byteStream(), %T::class.java)", cls, optionCls)
                 if (itemDescriptor.headers != null) {
                     add(", ")
