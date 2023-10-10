@@ -114,7 +114,7 @@ class OkHttpClientInterfaceGenerator(
                         val toMediaType = MemberName("okhttp3.MediaType.Companion", "toMediaType")
                         val propertyName = (type as TypeDescriptor.Object).clsName!!.decapitalized()
 
-                        add("is %T -> requestBuilder.post(", cls)
+                        add("is %T -> requestBuilder.%L(", cls, operation.method)
                         when (mediaType) {
                             RequestBodyMediaType.FormData -> {
                                 addStatement("%T.Builder()", ClassName("okhttp3", "FormBody"))
