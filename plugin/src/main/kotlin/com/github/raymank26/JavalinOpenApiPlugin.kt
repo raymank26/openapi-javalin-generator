@@ -4,6 +4,7 @@ import io.swagger.parser.OpenAPIParser
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import java.io.File
+import java.nio.file.Path
 import java.nio.file.Paths
 
 @Suppress("unused")
@@ -13,15 +14,23 @@ class JavalinOpenApiPlugin : Plugin<Project> {
         val extension = project.extensions.create("javalinOpenApi", JavalinOpenApiPluginExtension::class.java)
 
         project.tasks.create("generateOpenApiClasses") {
+            val generateBasePath = Paths.get("generated", "main", "kotlin")
+            val baseGenerationPath = project.buildDir.toPath()
+                .resolve(generateBasePath)
+
+            it.inputs.dir("${project.projectDir}/openapi")
+            it.outputs.dir(baseGenerationPath)
             it.doLast {
                 for (outputTarget in extension.targets) {
-                    processOutputTarget(project, outputTarget)
+                    processOutputTarget(project, baseGenerationPath, outputTarget)
                 }
             }
         }
+
+        project.tasks.getByName("compileKotlin").dependsOn("generateOpenApiClasses")
     }
 
-    private fun processOutputTarget(project: Project, outputTarget: OutputTarget) {
+    private fun processOutputTarget(project: Project, baseGenerationPath: Path, outputTarget: OutputTarget) {
         val basePackageName = outputTarget.basePackageName.get()
         val specName = outputTarget.specName.getOrElse("spec.yml")
         val result = File("${project.projectDir}/openapi/$specName")
@@ -33,10 +42,6 @@ class JavalinOpenApiPlugin : Plugin<Project> {
         val spec = result.openAPI
         val operationsParser = OperationsParser(spec)
         val specMetadata = operationsParser.parseSpec()
-
-        val generateBasePath = Paths.get("generated", "main", "kotlin")
-        val baseGenerationPath = project.buildDir.toPath()
-            .resolve(generateBasePath)
 
         val packagePath = outputTarget.basePackageName.get().replace('.', '/')
         project.delete(baseGenerationPath.resolve(packagePath))

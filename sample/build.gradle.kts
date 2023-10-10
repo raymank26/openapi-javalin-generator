@@ -25,10 +25,6 @@ tasks.create("foo") {
     dependsOn("generateOpenApiClasses")
 }
 
-tasks.compileJava {
-    dependsOn("generateOpenApiClasses")
-}
-
 kotlin {
     jvmToolchain(11)
 }
