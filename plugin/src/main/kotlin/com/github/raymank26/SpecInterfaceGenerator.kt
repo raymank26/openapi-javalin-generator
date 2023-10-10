@@ -4,14 +4,14 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.TypeSpec.Companion.interfaceBuilder
 import java.nio.file.Path
 
-class ServerInterfaceGenerator(
+class SpecInterfaceGenerator(
     private val specMetadata: SpecMetadata,
     private val basePackageName: String,
     private val baseGenerationPath: Path
 ) {
 
     fun generate() {
-        val typeSpecBuilder = interfaceBuilder("${specMetadata.namePrefix}Server")
+        val typeSpecBuilder = interfaceBuilder("${specMetadata.namePrefix}Spec")
 
         specMetadata.operations.forEach { operationDescriptor ->
             val funBuilder = FunSpec.builder(operationDescriptor.operationId)
@@ -22,7 +22,8 @@ class ServerInterfaceGenerator(
                         paramDescriptor.name,
                         getParamTypeName(
                             paramDescriptor.typePropertyDescriptor.name,
-                            paramDescriptor.typePropertyDescriptor.type
+                            paramDescriptor.typePropertyDescriptor.type,
+                            paramDescriptor.typePropertyDescriptor.required
                         )
                     )
                 )
@@ -38,7 +39,8 @@ class ServerInterfaceGenerator(
             funBuilder.returns(
                 getParamTypeName(
                     operationDescriptor.responseBody.clsName,
-                    operationDescriptor.responseBody.type
+                    operationDescriptor.responseBody.type,
+                    required = true
                 )
             )
             typeSpecBuilder.addFunction(
@@ -46,13 +48,13 @@ class ServerInterfaceGenerator(
                     .build()
             )
         }
-        FileSpec.builder(basePackageName, "Server")
+        FileSpec.builder(basePackageName, "${specMetadata.namePrefix}Spec")
             .addType(typeSpecBuilder.build())
             .build()
             .writeTo(baseGenerationPath)
     }
 
-    private fun getParamTypeName(name: String, descriptor: TypeDescriptor): TypeName {
+    private fun getParamTypeName(name: String, descriptor: TypeDescriptor, required: Boolean): TypeName {
         return when (descriptor) {
             is TypeDescriptor.Array -> ClassName(basePackageName, name)
             is TypeDescriptor.Object -> ClassName(basePackageName, name)
@@ -61,6 +63,6 @@ class ServerInterfaceGenerator(
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
             TypeDescriptor.StringType -> ClassName("kotlin", "String")
-        }
+        }.copy(nullable = !required)
     }
 }

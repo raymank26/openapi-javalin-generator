@@ -11,6 +11,7 @@ class OkHttpClientInterfaceGenerator(
 ) {
     fun generateClient() {
         val typeSpec = TypeSpec.classBuilder("${specMetadata.namePrefix}Client")
+            .addSuperinterface(ClassName(basePackageName, "${specMetadata.namePrefix}Spec"))
         val okHttpClientType = bestGuess("okhttp3.OkHttpClient")
         val objectMapperType = bestGuess("com.fasterxml.jackson.databind.ObjectMapper")
         val okHttpClientBuilder = ClassName("okhttp3", "OkHttpClient", "Builder")
@@ -61,6 +62,7 @@ class OkHttpClientInterfaceGenerator(
 
     private fun createFunction(operation: OperationDescriptor): FunSpec {
         val funSpec = FunSpec.builder(operation.operationId)
+            .addModifiers(KModifier.OVERRIDE)
         operation.paramDescriptors.forEach { paramDescriptor ->
             funSpec.addParameter(paramDescriptor.name, resolveType(paramDescriptor.typePropertyDescriptor))
         }

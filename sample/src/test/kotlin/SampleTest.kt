@@ -106,7 +106,7 @@ class SampleTest {
     }
 }
 
-class PetServer : SampleServer {
+class PetServer : SampleSpec {
 
     private lateinit var pets: MutableMap<Int, Pet>
 
@@ -123,8 +123,8 @@ class PetServer : SampleServer {
         return CustomPetResponse.Ok
     }
 
-    override fun listPets(limit: Int): ListPetsResponse {
-        return if (limit > 0) {
+    override fun listPets(limit: Int?): ListPetsResponse {
+        return if (limit != null && limit > 0) {
             ListPetsResponse.Pets(Pets(pets.values.toList().take(limit)), ListPetsResponsePetsHeaders(null))
         } else {
             ListPetsResponse.Error(Error(400, "Limit <= 0"))

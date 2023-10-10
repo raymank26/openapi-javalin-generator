@@ -53,6 +53,13 @@ class JavalinOpenApiPlugin : Plugin<Project> {
         )
         typesGenerator.generateTypes()
 
+        val specInterfaceGenerator = SpecInterfaceGenerator(
+            specMetadata = specMetadata,
+            basePackageName = basePackageName,
+            baseGenerationPath = baseGenerationPath
+        )
+        specInterfaceGenerator.generate()
+
         val okHttpClientInterfaceGenerator = OkHttpClientInterfaceGenerator(
             specMetadata = specMetadata,
             basePackageName = basePackageName,
@@ -61,12 +68,6 @@ class JavalinOpenApiPlugin : Plugin<Project> {
         okHttpClientInterfaceGenerator.generateClient()
 
         if (outputTarget.generateServerCode.getOrElse(true)) {
-            val serverInterfaceGenerator = ServerInterfaceGenerator(
-                specMetadata = specMetadata,
-                basePackageName = basePackageName,
-                baseGenerationPath = baseGenerationPath
-            )
-            serverInterfaceGenerator.generate()
 
             val javalinControllerGenerator = JavalinControllerGenerator(
                 specMetadata = specMetadata,
