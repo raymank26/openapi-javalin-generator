@@ -27,7 +27,7 @@ class JavalinOpenApiPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.getByName("compileKotlin").dependsOn("generateOpenApiClasses")
+        project.tasks.findByPath("compileKotlin")?.dependsOn("generateOpenApiClasses")
     }
 
     private fun processOutputTarget(project: Project, baseGenerationPath: Path, outputTarget: OutputTarget) {
