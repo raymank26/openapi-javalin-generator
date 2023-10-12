@@ -29,7 +29,7 @@ See `sample/src/test/kotlin/SampleTest.kt` for usage example.
 
 # TODO
 
-- [x] Implement GET requests with query and form parameters
+- [x] Implement HTTP requests with query, headers and form parameters
 - [x] Generate HTTP response classes
 - [x] Generate Javalin glue code (controller)
 - [x] Support multiple OpenAPI specs in a single module
