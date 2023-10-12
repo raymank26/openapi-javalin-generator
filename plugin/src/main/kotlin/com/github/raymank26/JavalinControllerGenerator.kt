@@ -40,16 +40,19 @@ class JavalinControllerGenerator(
                             add("(")
                             val paramDescriptors = operationDescriptor.paramDescriptors
                             for ((index, paramDescriptor) in paramDescriptors.withIndex()) {
-                                if (paramDescriptor.place == "query") {
-                                    add("ctx.queryParam(%S)", paramDescriptor.name)
-                                } else {
-                                    add("ctx.pathParam(%S)", paramDescriptor.name)
+                                when (paramDescriptor.place) {
+                                    "query" -> add("ctx.queryParam(%S)", paramDescriptor.name)
+                                    "path" -> add("ctx.pathParam(%S)", paramDescriptor.name)
+                                    "header" -> add("ctx.header(%S)", paramDescriptor.name)
                                 }
                                 when (paramDescriptor.typePropertyDescriptor.type) {
-                                    TypeDescriptor.Int64Type -> add("!!.toLong()")
-                                    TypeDescriptor.IntType -> add("!!.toInt()")
+                                    TypeDescriptor.Int64Type -> add("?.toLong()")
+                                    TypeDescriptor.IntType -> add("?.toInt()")
                                     TypeDescriptor.StringType -> Unit
                                     else -> error("Cannot get param of complex type")
+                                }
+                                if (paramDescriptor.typePropertyDescriptor.required && paramDescriptor.place != "path") {
+                                    add("!!")
                                 }
                                 if (index != paramDescriptors.size - 1) {
                                     add(", ")

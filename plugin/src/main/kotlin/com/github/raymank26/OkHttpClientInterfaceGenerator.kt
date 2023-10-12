@@ -103,7 +103,14 @@ class OkHttpClientInterfaceGenerator(
             addStatement("val requestBuilder = %T.Builder()", bestGuess("okhttp3.Request"))
                 .withIndent {
                     addStatement(".url(url)")
+                    operation.paramDescriptors
+                        .filter { it.place == "header" }
+                        .forEach {
+                            addStatement(".header(%S, %N)", it.name, it.name)
+                        }
+
                 }
+
         })
 
         val toRequestBody = MemberName("okhttp3.RequestBody.Companion", "toRequestBody")

@@ -62,7 +62,7 @@ class SampleTest {
 
         // when
         val createResponse = petClinicClient.createPet(CreatePetRequest.Form(pet))
-        val showResponse = petClinicClient.showPetById(5.toString()) as ShowPetByIdResponse.Pet
+        val showResponse = petClinicClient.showPetById(5.toString(), "1.2") as ShowPetByIdResponse.Pet
 
         Assertions.assertInstanceOf(CreatePetResponse.Created::class.java, createResponse)
 
@@ -77,7 +77,7 @@ class SampleTest {
 
         // when
         val createResponse = petClinicClient.createPet(CreatePetRequest.Json(pet))
-        val showResponse = petClinicClient.showPetById(5.toString()) as ShowPetByIdResponse.Pet
+        val showResponse = petClinicClient.showPetById(5.toString(), "1.2") as ShowPetByIdResponse.Pet
 
         Assertions.assertInstanceOf(CreatePetResponse.Created::class.java, createResponse)
 
@@ -141,7 +141,8 @@ class PetServer : SampleSpec {
         return CreatePetResponse.Created
     }
 
-    override fun showPetById(petId: String): ShowPetByIdResponse {
+    override fun showPetById(petId: String, `x-version`: String): ShowPetByIdResponse {
+        require(`x-version` == "1.2")
         val pet = pets[petId.toInt()]
         return if (pet != null) {
             ShowPetByIdResponse.Pet(pet)
