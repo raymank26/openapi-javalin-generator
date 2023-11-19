@@ -56,6 +56,8 @@ sealed interface TypeDescriptor {
 
     data object StringType : TypeDescriptor
 
+    data object BooleanType : TypeDescriptor
+
     data object Int64Type : TypeDescriptor
 
     data object IntType : TypeDescriptor

@@ -63,6 +63,7 @@ class SpecInterfaceGenerator(
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
             TypeDescriptor.StringType -> ClassName("kotlin", "String")
+            TypeDescriptor.BooleanType -> Boolean::class.java.asTypeName()
         }.copy(nullable = !required)
     }
 }

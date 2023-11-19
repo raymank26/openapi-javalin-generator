@@ -158,7 +158,7 @@ class OperationsParser(private val spec: OpenAPI) {
 
             "object" -> {
                 val requiredProperties = schema.required?.toSet() ?: emptySet()
-                val properties = schema.properties.map { (name, property) ->
+                val properties = (schema.properties ?: emptyMap()).map { (name, property) ->
                     getTypePropertyDescriptor(name, property, requiredProperties.contains(name))
                 }
                 TypeDescriptor.Object(clsName, properties)
@@ -192,8 +192,9 @@ class OperationsParser(private val spec: OpenAPI) {
             return TypeDescriptor.RefType(property.`$ref`)
         }
         return when (val type = property.type) {
-            "integer" -> TypeDescriptor.IntType
+            "integer" -> if (property.format == "int64") TypeDescriptor.Int64Type else TypeDescriptor.IntType
             "string" -> TypeDescriptor.StringType
+            "boolean" -> TypeDescriptor.BooleanType
             "array" -> {
                 TypeDescriptor.Array(null, getPropertyType(property.items))
             }

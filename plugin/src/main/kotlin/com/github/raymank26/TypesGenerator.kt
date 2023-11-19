@@ -3,7 +3,10 @@ package com.github.raymank26
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ClassName.Companion.bestGuess
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import org.slf4j.LoggerFactory
 import java.nio.file.Path
+
+private val log = LoggerFactory.getLogger(TypesGenerator::class.java)
 
 class TypesGenerator(
     private val specMetadata: SpecMetadata,
@@ -105,7 +108,11 @@ class TypesGenerator(
 
                     descriptions.forEach { description ->
                         val subType = generateTypeDescriptor(description, true)
-                        val simpleName = (subType as ClassName).simpleName
+                        val simpleName = when (subType) {
+                            is ParameterizedTypeName -> subType.rawType.simpleName
+                            is ClassName -> subType.simpleName
+                            else -> error("Unsupported type of subType = $subType")
+                        }
 
                         constructorBuilder.addParameter(
                             ParameterSpec
@@ -144,6 +151,7 @@ class TypesGenerator(
             TypeDescriptor.Int64Type -> Long::class.java.asTypeName()
             TypeDescriptor.IntType -> Int::class.java.asTypeName()
             TypeDescriptor.StringType -> ClassName("kotlin", "String")
+            TypeDescriptor.BooleanType -> Boolean::class.java.asTypeName()
         }
         return basicType.copy(nullable = !required)
     }

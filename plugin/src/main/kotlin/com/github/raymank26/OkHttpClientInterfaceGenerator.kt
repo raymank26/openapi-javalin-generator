@@ -44,7 +44,12 @@ class OkHttpClientInterfaceGenerator(
             PropertySpec.builder("objectMapper", objectMapperType, KModifier.PRIVATE)
                 .initializer(
                     CodeBlock.of(
-                        "%T().%M()", objectMapperType,
+                        "%T().configure(%M, false).%M()",
+                        objectMapperType,
+                        MemberName(
+                            "com.fasterxml.jackson.databind.DeserializationFeature",
+                            "FAIL_ON_UNKNOWN_PROPERTIES"
+                        ),
                         MemberName("com.fasterxml.jackson.module.kotlin", "registerKotlinModule")
                     )
                 )
